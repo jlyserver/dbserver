@@ -3,7 +3,6 @@
 import time
 
 from sqlalchemy import Column, String, Integer, Date, TIMESTAMP, create_engine
-from sqlalchemy import Enum
 from sqlalchemy.sql import and_, or_, not_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -25,8 +24,8 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = conf.table_user
 
-    def __init__(self, id_=0, name='', password='', sex='0', aim='0', age=18,\
-            m='0', xz='0', sx='0', blood='0', wt=50, ht=160, de='0', \
+    def __init__(self, id_=0, name='', password='', sex=0, aim=0, age=18,\
+            m=0, xz=0, sx=0, blood=0, wt=50, ht=160, de=0, \
             na='汉族', cl1='', cl2='', ori1='', ori2='', t=None):
         self.id       = id_
         self.nick_name= name
@@ -56,16 +55,16 @@ class User(Base):
     id                = Column(Integer, primary_key=True)
     nick_name         = Column(String(16))
     password          = Column(String(16))
-    sex               = Column(Enum('0', '1', '2'))
-    aim               = Column(Enum('0', '1', '2', '3'))
+    sex               = Column(Integer)
+    aim               = Column(Integer)
     age               = Column(Integer)
-    marriage          = Column(Enum('0', '1', '2', '3', '4')) 
-    xingzuo           = Column(Enum('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'))
-    shengxiao         = Column(Enum('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'))
-    blood             = Column(Enum('0', '1', '2', '3', '4'))
+    marriage          = Column(Integer) 
+    xingzuo           = Column(Integer)
+    shengxiao         = Column(Integer)
+    blood             = Column(Integer)
     weight            = Column(Integer)
     height            = Column(Integer)
-    degree            = Column(Enum('0', '1', '2', '3', '4', '5'))
+    degree            = Column(Integer)
     nation            = Column(String(6))
     curr_loc1         = Column(String(8))
     curr_loc2         = Column(String(8))
@@ -127,10 +126,10 @@ class Statement(Base):
 ###########################################
 class OtherInfo(Base):
     __tablename__ = conf.table_otherinfo
-    def __init__(self, id_, salary='0', work='0', house='0', car='0',\
-                mobile='', verify_m='0', public_m='1', email='', \
-                verify_e='0', public_e='1', wx='', verify_w='0', \
-                public_w='1', qq='', verify_q='0', public_q='1'):
+    def __init__(self, id_, salary=0, work=0, house=0, car=0,\
+                mobile='', verify_m=0, public_m=1, email='', \
+                verify_e=0, public_e=1, wx='', verify_w=0, \
+                public_w=1, qq='', verify_q=0, public_q=1):
         self.id          = id_
         self.salary      = salary
         self.work        = work
@@ -150,28 +149,28 @@ class OtherInfo(Base):
         self.public_q    = public_q
 
     id           = Column(Integer, primary_key=True)
-    salary       = Column(Enum('0', '1', '2', '3', '4', '5', '6'))
-    work         = Column(Enum('0', '1', '2', '3', '4', '5', '6', '7'))
-    house        = Column(Enum('0', '1', '2', '3'))
-    car          = Column(Enum('0', '1', '2', '3'))
+    salary       = Column(Integer)
+    work         = Column(Integer)
+    house        = Column(Integer)
+    car          = Column(Integer)
     mobile       = Column(String(16))
-    verify_m     = Column(Enum('0', '1'))
-    public_m     = Column(Enum('0', '1'))
+    verify_m     = Column(Integer)
+    public_m     = Column(Integer)
     
     email        = Column(String(64))
-    verify_e     = Column(Enum('0', '1'))
-    public_e     = Column(Enum('0', '1'))
+    verify_e     = Column(Integer)
+    public_e     = Column(Integer)
 
     wx           = Column(String(32))
-    verify_w     = Column(Enum('0', '1'))
-    public_w     = Column(Enum('0', '1'))
+    verify_w     = Column(Integer)
+    public_w     = Column(Integer)
 
     qq           = Column(String(16))
-    verify_q     = Column(Enum('0', '1'))
-    public_q     = Column(Enum('0', '1'))
+    verify_q     = Column(Integer)
+    public_q     = Column(Integer)
     
     def dic_return(self):
-        a = ['未填', '2000以下', '2000~5000', '5000~10000' '10000~20000', '20000~50000', '50000以上']
+        a = ['未填', '2000以下', '2000~5000', '5000~10000', '10000~20000', '20000~50000', '50000以上']
         sid_ = int(self.salary)
         sid  = sid_ if sid_ >= 0 and sid_ < len(a) else 0
         w = ['未填', '学生', '老师', '工程师','商务人士','个体老板','白领人士','其他']
@@ -238,9 +237,9 @@ class Picture(Base):
 ###########################################
 class Hobby(Base):
     __tablename__ = conf.table_hobby
-    def __init__(self, id_, ps='0', sy='0', yy='0', dy='0', ly='0', \
-                 yx='0', js='0', ms='0', pb='0', gj='0', cg='0', \
-                 tw='0', pk='0', mj='0', wg='0', ks='0'):
+    def __init__(self, id_, ps=0, sy=0, yy=0, dy=0, ly=0, \
+                 yx=0, js=0, ms=0, pb=0, gj=0, cg=0, \
+                 tw=0, pk=0, mj=0, wg=0, ks=0):
         self.id       = id_
         self.pashan   = ps
         self.sheying  = sy
@@ -259,22 +258,22 @@ class Hobby(Base):
         self.wanggou  = wg
         self.kanshu   = ks
     id           = Column(Integer, primary_key=True)
-    pashan       = Column(Enum('0', '1'))
-    sheying      = Column(Enum('0', '1'))
-    yinyue       = Column(Enum('0', '1'))
-    dianying     = Column(Enum('0', '1'))
-    lvyou        = Column(Enum('0', '1'))
-    youxi        = Column(Enum('0', '1'))
-    jianshen     = Column(Enum('0', '1'))
-    meishi       = Column(Enum('0', '1'))
-    paobu        = Column(Enum('0', '1'))
-    guangjie     = Column(Enum('0', '1'))
-    changge      = Column(Enum('0', '1'))
-    tiaowu       = Column(Enum('0', '1'))
-    puke         = Column(Enum('0', '1'))
-    majiang      = Column(Enum('0', '1'))
-    wanggou      = Column(Enum('0', '1'))
-    kanshu       = Column(Enum('0', '1'))
+    pashan       = Column(Integer)
+    sheying      = Column(Integer)
+    yinyue       = Column(Integer)
+    dianying     = Column(Integer)
+    lvyou        = Column(Integer)
+    youxi        = Column(Integer)
+    jianshen     = Column(Integer)
+    meishi       = Column(Integer)
+    paobu        = Column(Integer)
+    guangjie     = Column(Integer)
+    changge      = Column(Integer)
+    tiaowu       = Column(Integer)
+    puke         = Column(Integer)
+    majiang      = Column(Integer)
+    wanggou      = Column(Integer)
+    kanshu       = Column(Integer)
     
     def dic_return(self):
         return {'id':        self.id,      'pashan':     self.pashan, \

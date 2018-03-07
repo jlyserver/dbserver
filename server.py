@@ -62,6 +62,8 @@ class IndexNewHandler(tornado.web.RequestHandler):
             now = time.strftime('%Y-%m-%d %H:%M:%S', t)
             r = query_new(t, sex, limit, page, next_)
             d = {'code':0, 'msg':'ok', 'data':r}
+            print('sex=%d'%sex)
+            print(d)
             d = json.dumps(d)
             self.write(d)
 

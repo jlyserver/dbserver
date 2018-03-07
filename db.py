@@ -363,10 +363,12 @@ def query_new(t, sex, limit, page, next_):
     for e in p:
         p_[e.id] = e.dic_array()
     D = {}
+    pic_default = Picture()
+    st_defautl = Statement()
     for e in r:
-        D[e.id] = {'user':e.dic_return2(),
-                   'pic':p_.get(e.id, {}),
-                   'statement':m_.get(e.id,{})}
+        pic = p_.get(e.id, pic_default.dic_default(e.id))
+        st  = m_.get(e.id, st_defautl.dic_default(e.id))
+        D[e.id] = {'user':e.dic_return2(), 'pic':pic, 'statement':st}
     s.close()
     return [D[e] for e in D] if D else []
 

@@ -113,7 +113,7 @@ class User(Base):
 ###########################################
 class Statement(Base):
     __tablename__ = conf.table_statement
-    def __init__(self, id_, motto='', stat=''):
+    def __init__(self, id_=0, motto='', stat=''):
         self.id         = id_
         self.motto      = motto
         self.content    = stat
@@ -121,6 +121,9 @@ class Statement(Base):
     motto             = Column(String(128))
     content           = Column(String(1024))
     def dic_return(self):
+        return {'id': self.id, 'motto': self.motto, 'content': self.content}
+    def dic_default(self, id_=0):
+        self.id = id_
         return {'id': self.id, 'motto': self.motto, 'content': self.content}
 
 ###########################################
@@ -196,7 +199,7 @@ class OtherInfo(Base):
 ###########################################
 class Picture(Base):
     __tablename__ = conf.table_picture
-    def __init__(self, id_, c=9, u0='', u1='', u2='', u3='', u4='',\
+    def __init__(self, id_=0, c=9, u0='', u1='', u2='', u3='', u4='',\
             u5='', u6='', u7='', u8='', u9=''):
         self.id     = id_
         self.count  = c
@@ -233,6 +236,11 @@ class Picture(Base):
         a = [self.url0, self.url1, self.url2, self.url3, self.url4,\
              self.url5, self.url6, self.url7, self.url8, self.url9]
         return {'id':   self.id,     'count': self.count,  'arr': a}
+    def dic_default(self, id_=0):
+        self.id = id_
+        a = ['' for i in xrange(self.count+1) ]
+        return {'id':   self.id,     'count': self.count,  'arr': a}
+
 
 ###########################################
 class Hobby(Base):

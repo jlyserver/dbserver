@@ -343,6 +343,32 @@ def query_user(**cond):
         mid['pic_url'] = pic_url if not pic_url else pic_url.url0
         result.append(mid)
     return result
+'''
+t:     在t时间之后注册的
+sex:   0=unknown  1=male 2=female
+limit: 一次最多取limit个
+page:  一页有多少个
+next_: 第几页, 实际上是(next_+1)*limit个, next_从0开始
+'''
+def query_new(t, sex, limit, page, next_):
+    s = DBSession()
+    r = s.query(User).filter(User.sex == sex).filter(User.regist_time >= t).limit(limit).offset(page*next_)
+    ids = [e.id for e in r]
+    m = s.query(Statement).filter(Statement.id.in_(ids)).all()
+    m_ = {}
+    for e in m:
+        m_[e.id] = e.dic_return()
+    p = s.query(Picture).filter(Picture.id.in_(ids)).all()
+    p_ = {}
+    for e in p:
+        p_[e.id] = e.dic_array()
+    D = {}
+    for e in r:
+        D[e.id] = {'user':e.dic_return2(),
+                   'pic':p_.get(e.id, {}),
+                   'statement':m_.get(e.id,{})}
+    s.close()
+    return [D[e] for e in D] if D else []
 
 def edit_statement(cnt, **ctx):
     if not ctx:
@@ -442,8 +468,8 @@ def publish_conn(kind, action, **ctx):
 
 __all__=['user_regist', 'query_user', 'query_user_login', 'get_user_info',
          'update_basic','get_ctx_info', 'edit_statement', 'edit_other',
-         'publish_conn']
+         'publish_conn','query_new']
 
 if __name__ == '__main__':
-    r = update_basic(5, nick_name='tanqiang', aim='2', age=12)
+    r = query_new('2017-12-01 00:00:00', 1, 5, 5, 0)
     print(r)

@@ -25,7 +25,7 @@ class User(Base):
     __tablename__ = conf.table_user
 
     def __init__(self, id_=0, name='', password='', sex=0, aim=0, age=18,\
-            m=0, xz=0, sx=0, blood=0, wt=50, ht=160, de=0, \
+            m=0, xz=0, sx=0, blood=0, salary=0, wt=50, ht=160, de=0, \
             na='汉族', cl1='', cl2='', ori1='', ori2='', t=None):
         self.id       = id_
         self.nick_name= name
@@ -37,6 +37,7 @@ class User(Base):
         self.xingzuo  = xz
         self.shengxiao= sx
         self.blood    = blood
+        self.salary   = salary
         self.weight   = wt
         self.height   = ht
         self.degree   = de
@@ -62,6 +63,7 @@ class User(Base):
     xingzuo           = Column(Integer)
     shengxiao         = Column(Integer)
     blood             = Column(Integer)
+    salary            = Column(Integer)
     weight            = Column(Integer)
     height            = Column(Integer)
     degree            = Column(Integer)
@@ -73,41 +75,20 @@ class User(Base):
     regist_time       = Column(TIMESTAMP)
 
     def dic_return(self):
-        sex = ['未填', '男', '女']
-        aim = ['未填', '交友', '征婚', '聊天']
-        mar = ['保密', '单身', '非单身', '已婚', '丧偶']
-        xz  = ['未填', '白羊座', '金牛座', '双子座', '巨蟹座', '狮子座', '处女座',\
-               '天秤座', '天蝎座', '射手座', '摩羯座', '水瓶座', '双鱼座']
-        sx  = ['未填', '鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪']
-        bd  = ['未填', 'A', 'B', 'AB', 'O']
-        xl  = ['保密', '高中及以下', '中专/大专', '本科', '研究生', '博士及博士后']
-        sex_id_ = int(self.sex)
-        sex_id = sex_id_ if sex_id_ >= 0 and sex_id_ < len(sex) else 0
-        aim_id_ = int(self.aim)
-        aim_id = aim_id_ if aim_id_ >= 0 and aim_id_ < len(aim) else 0
-        mar_id_= int(self.marriage)
-        mar_id = mar_id_ if mar_id_ >= 0 and mar_id_ < len(mar) else 0
-        xz_id_ = int(self.xingzuo)
-        xz_id  = xz_id_ if xz_id_ >= 0 and xz_id_ < len(xz) else 0
-        sx_id_ = int(self.shengxiao)
-        sx_id  = sx_id_ if sx_id_ >= 0 and sx_id_ < len(sx) else 0
-        bd_id_ = int(self.blood)
-        bd_id  = bd_id_ if bd_id_ >= 0 and bd_id_ < len(bd) else 0
-        xl_id_ = int(self.degree)
-        xl_id  = xl_id_ if xl_id_ >= 0 and xl_id_ < len(xl) else 0
-        return { 'id':       self.id,          'nick_name': self.nick_name, \
-                 'password': self.password,    'sex':       sex[sex_id], \
-                 'aim':      aim[aim_id],      'age':       self.age, \
-                 'marriage': mar[mar_id],      'xingzuo':   xz[xz_id], \
-                 'shengxiao':sx[sx_id],        'blood':     bd[bd_id], \
-                 'weight':   self.weight,      'height':    self.height, \
-                 'degree':   xl[xl_id],        'nation':    self.nation, \
-                 'curr_loc1':self.curr_loc1,   'curr_loc2': self.curr_loc2, \
-                 'ori_loc1': self.ori_loc1,    'ori_loc2':  self.ori_loc2, \
+        return { 'id':       self.id,          'nick_name': self.nick_name, 
+                 'password': self.password,    'sex':       self.sex,
+                 'aim':      self.aim,         'age':       self.age,
+                 'marriage': self.marriage,    'xingzuo':   self.xingzuo,
+                 'shengxiao':self.shengxiao,   'blood':     self.blood,
+                 'salary':   self.salary,
+                 'weight':   self.weight,      'height':    self.height,
+                 'degree':   self.degree,      'nation':    self.nation,
+                 'curr_loc1':self.curr_loc1,   'curr_loc2': self.curr_loc2, 
+                 'ori_loc1': self.ori_loc1,    'ori_loc2':  self.ori_loc2,
                  'regist_time': str(self.regist_time)}
     def dic_return2(self):
-        return { 'id':       self.id,          'nick_name': self.nick_name, \
-                 'sex':      self.sex,         'age':       self.age, \
+        return { 'id':       self.id,          'nick_name': self.nick_name,
+                 'sex':      self.sex,         'age':       self.age,
                  'height':   self.height,      'degree':    self.degree}
 
 ###########################################
@@ -173,27 +154,14 @@ class OtherInfo(Base):
     public_q     = Column(Integer)
     
     def dic_return(self):
-        a = ['未填', '2000以下', '2000~5000', '5000~10000', '10000~20000', '20000~50000', '50000以上']
-        sid_ = int(self.salary)
-        sid  = sid_ if sid_ >= 0 and sid_ < len(a) else 0
-        w = ['未填', '学生', '老师', '工程师','商务人士','个体老板','白领人士','其他']
-        wid_ = int(self.work)
-        wid  = wid_ if wid_ >= 0 and wid_ < len(w) else 0
-        h = ['未填', '已购','未购','需要', '时购']
-        hid_ = int(self.house)
-        hid = hid_ if hid_ >= 0 and hid_ < len(h) else 0
-        c = ['未填', '已购', '未购', '需要时购']
-        cid_ = int(self.car)
-        cid = cid_ if cid_ >= 0 and cid_ < len(c) else 0
-
-        return {'id':      self.id,         'salary':     a[sid], \
-                'work':    w[wid],          'house':      h[hid], \
-                'car':     c[cid],          'mobile':     self.mobile, \
-                'verify_m':self.verify_m,   'public_m':   self.public_m,\
-                'email':   self.email,      'verify_e':   self.verify_e,\
-                'public_e':self.public_e,   'wx':         self.wx, \
-                'verify_w':self.verify_w,   'public_w':   self.public_w,\
-                'qq':      self.qq,         'verify_q':   self.verify_q,\
+        return {'id':      self.id,         'salary':     self.salary,
+                'work':    self.work,       'house':      self.house,
+                'car':     self.car,        'mobile':     self.mobile,
+                'verify_m':self.verify_m,   'public_m':   self.public_m,
+                'email':   self.email,      'verify_e':   self.verify_e,
+                'public_e':self.public_e,   'wx':         self.wx,
+                'verify_w':self.verify_w,   'public_w':   self.public_w,
+                'qq':      self.qq,         'verify_q':   self.verify_q,
                 'public_q':self.public_q }
 
 ###########################################

@@ -371,6 +371,80 @@ def query_new(t, sex, limit, page, next_):
         D[e.id] = {'user':e.dic_return2(), 'pic':pic, 'statement':st}
     s.close()
     return [D[e] for e in D] if D else []
+'''
+按条件查找
+sex:       1=男 2=女
+agemin:    年龄区间最小
+agemax:    年龄区间最大
+cur1:      当前居住省(直辖市)
+cur2:      当前居住市(直辖市区)
+ori1:      籍贯所在省(直辖市)
+ori2:      籍贯所在市(直辖市区)
+degree:    学历  0=保密 1=高中及以下 2=中专/大专
+                 3=本科 4=研究生     5=博士及博士后
+salary:    薪资  0=未填 1=2000以下    2=2000~5000   3=5000~10000
+                        4=10000~20000 5=20000~50000 6=50000以上
+xz:        星座  0=未填 1~12依次顺排星座 1=白羊座 2=金牛座 3=双子座
+sx:        生肖  0=未填 1~12依次顺排生肖 1=鼠 2=牛 3=虎...12=猪
+limit:     一次最多取limit个
+page:      一个页面最多能展示page个
+next_:     分页, 0=第一页 1=第二页
+'''
+def find_users(sex=None,  agemin=None, agemax=None, cur1=None, cur2=None,\
+               ori1=None, ori2=None,   degree=None, salary=None,\
+               xz=None,   sx=None, limit=8, page=12, next_=0):
+    limit = 8 if limit < 1 else limit
+    page  = 12 if page < 1 else page
+    next_ = 0 if next_ < 1 else next_
+    s = DBSession()
+    t = s.query(User)
+    if sex and sex in [1,2]:
+        t = t.filter(User.sex == sex)
+    if agemin and agemin >= 18:
+        t = t.filter(User.age >= agemin)
+    if agemax and agemax >= 18:
+        t = t.filter(User.age <= agemax)
+    if cur1:
+        t = t.filter(User.curr_loc1 == cur1)
+    if cur2:
+        t = t.filter(User.curr_loc2 == cur2)
+    if ori1:
+        t = t.filter(User.ori_loc1 == ori1)
+    if ori2:
+        t = t.filter(User.ori_loc2 == ori2)
+    if degree and degree in [0, 1, 2, 3, 4, 5]:
+        t = t.filter(User.degree == degree)
+    if salary and salary in [0, 1, 2, 3, 4, 5]:
+        t = t.filter(User.salary == salary)
+    if xz and xz in [i for i in xrange(13)]:
+        t = t.filter(User.xingzuo == xz)
+    if sx and sx in [i for i in xrange(13)]:
+        t = t.filter(User.shengxiao == sx)
+    if salary and salary in [i for i in xrange(7) if i > 0]:
+        t = t.filter(User.salary == salary)
+    count = t.count()
+    r = t.limit(limit).offset(page*next_)
+
+    ids = [e.id for e in r]
+    m = s.query(Statement).filter(Statement.id.in_(ids)).all()
+    m_ = {}
+    for e in m:
+        m_[e.id] = e.dic_return()
+    p = s.query(Picture).filter(Picture.id.in_(ids)).all()
+    p_ = {}
+    for e in p:
+        p_[e.id] = e.dic_array()
+    D = {}
+    pic_default = Picture()
+    st_defautl = Statement()
+    for e in r:
+        pic = p_.get(e.id, pic_default.dic_default(e.id))
+        st  = m_.get(e.id, st_defautl.dic_default(e.id))
+        D[e.id] = {'user':e.dic_return2(), 'pic':pic, 'statement':st}
+    s.close()
+    arr = [D[e] for e in D] if D else []
+    return count, arr
+
 
 def edit_statement(cnt, **ctx):
     if not ctx:
@@ -470,8 +544,8 @@ def publish_conn(kind, action, **ctx):
 
 __all__=['user_regist', 'query_user', 'query_user_login', 'get_user_info',
          'update_basic','get_ctx_info', 'edit_statement', 'edit_other',
-         'publish_conn','query_new']
+         'publish_conn','query_new', 'find_users']
 
 if __name__ == '__main__':
-    r = query_new('2017-12-01 00:00:00', 1, 5, 5, 0)
+    c, r = find_users()
     print(r)

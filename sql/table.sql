@@ -2,7 +2,7 @@
 create table if not exists user
 (
     id int unsigned primary key auto_increment,
-    nick_name varchar(16) unique,
+    nick_name varchar(16),
     password  varchar(16) not null,
     sex tinyint default 0, /*0=unknown 1=male  2=female */
     aim tinyint default 0, /*0=未填 1=交友 2=征婚 3=聊天*/
@@ -11,6 +11,7 @@ create table if not exists user
     xingzuo  tinyint default 0, /*0=unknown 1~12依次顺排星座*/
     shengxiao tinyint default 0, /*0=unknown 1~12依次顺排生肖*/
     blood tinyint default 0, /*0=unknown 1=A 2=B 3=AB 4=O */
+    salary tinyint default 0, /*月薪 0=未填 1=2000以下 2=2000~5000 3=5000~10000 4=10000~20000 5=20000~50000 6=50000以上*/
     weight int unsigned default 0, /*体重, 单位: kg*/
     height int unsigned default 0, /*身高, 单位: cm*/
     degree int default 0, /*0=保密 1=高中及以下 2=中专/大专 3=本科 4=研究生 5=博士及博士后 */

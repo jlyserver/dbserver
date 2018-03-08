@@ -67,6 +67,36 @@ class IndexNewHandler(tornado.web.RequestHandler):
             d = json.dumps(d)
             self.write(d)
 
+class FindHandler(tornado.web.RequestHandler):
+    def post(self):
+        sex          = int(self.get_argument('sex',     -1))
+        agemin       = int(self.get_argument('agemin',  -1))
+        agemax       = int(self.get_argument('agemax',  -1))
+        cur1         = self.get_argument('cur1',    None)
+        cur2         = self.get_argument('cur2',    None)
+        ori1         = self.get_argument('ori1',    None)
+        ori2         = self.get_argument('ori2',    None)
+        degree       = int(self.get_argument('degree', -1))
+        salary       = int(self.get_argument('salary', -1))
+        xz           = self.get_argument('xingzuo', None)
+        sx           = self.get_argument('shengxiao', None)
+        limit        = int(self.get_argument('limit', -1))
+        page         = int(self.get_argument('page', -1))
+        next_        = int(self.get_argument('next', -1))
+        if agemin > agemax:
+            agemin, agemax = agemax, agemin
+        c, r = find_users(sex, agemin, agemax, cur1, cur2, ori1, ori2,\
+                          degree, salary, xz, sx, limit, page, next_)
+        print(r)
+        if not r:
+            d = {'code': -1, 'msg':'error', 'data':{}}
+            d = json.dumps(d)
+            self.write(d)
+        else:
+            d = {'code': 0, 'msg':'ok', 'count':c, 'data':r}
+            d = json.dumps(d)
+            self.write(d)
+
 class CtxHandler(tornado.web.RequestHandler):
     def post(self):
         name     = self.get_argument('username', None)
@@ -277,6 +307,7 @@ if __name__ == "__main__":
         ('/other_edit', OtherEditHandler),
        #('/publish', PublishHandler),
         ('/new', IndexNewHandler),
+        ('/find', FindHandler),
               ]
     application = tornado.web.Application(handler, **settings)
     http_server = tornado.httpserver.HTTPServer(application)

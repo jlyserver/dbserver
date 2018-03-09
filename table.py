@@ -24,12 +24,14 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = conf.table_user
 
-    def __init__(self, id_=0, name='', password='', sex=0, aim=0, age=18,\
+    def __init__(self, id_=0, name='', password='', mobile='',
+            sex=0, aim=0, age=18,\
             m=0, xz=0, sx=0, blood=0, salary=0, wt=50, ht=160, de=0, \
             na='汉族', cl1='', cl2='', ori1='', ori2='', t=None):
         self.id       = id_
         self.nick_name= name
         self.password = password
+        self.mobile   = mobile
         self.sex      = sex
         self.aim      = aim
         self.age      = age
@@ -56,6 +58,7 @@ class User(Base):
     id                = Column(Integer, primary_key=True)
     nick_name         = Column(String(16))
     password          = Column(String(16))
+    mobile            = Column(String(16))
     sex               = Column(Integer)
     aim               = Column(Integer)
     age               = Column(Integer)
@@ -76,7 +79,8 @@ class User(Base):
 
     def dic_return(self):
         return { 'id':       self.id,          'nick_name': self.nick_name, 
-                 'password': self.password,    'sex':       self.sex,
+                 'password': self.password,    'mobile':    self.mobile,
+                 'sex':       self.sex,
                  'aim':      self.aim,         'age':       self.age,
                  'marriage': self.marriage,    'xingzuo':   self.xingzuo,
                  'shengxiao':self.shengxiao,   'blood':     self.blood,

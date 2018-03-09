@@ -117,39 +117,46 @@ class CtxHandler(tornado.web.RequestHandler):
                 self.write(r)
 class LoginHandler(tornado.web.RequestHandler):
     def post(self):
-        name   = self.get_argument('username', None)
+        moible = self.get_argument('mobile', None)
         passwd = self.get_argument('password', None)
-        if not name or not passwd:
-            r = {'code': -1, 'msg': 'username or password is null'}
+        if not mobile or not passwd:
+            r = {'code': -1, 'msg': 'mobile or password is null'}
             d = json.dumps(r)
             self.write(d)
         else:
-            r = query_user_login(name, passwd)
+            r = query_user_login(mobile, passwd)
             if not r:
                 d = {'code': -1, 'msg': 'not exist'}
             else:
                 uid = r['id']
                 info = get_user_info(uid)
                 info['user'] = r
-                d = {'code': 0, 'msg': 'success', 'data': info}
+                d = {'code': 0, 'msg': 'ok', 'data': info}
             d = json.dumps(d)
             self.write(d)
 
 class RegistHandler(tornado.web.RequestHandler):
     def post(self):
-        name   = self.get_argument('username', None)
+        mobile = self.get_argument('mobile', None)
         passwd = self.get_argument('password', None)
-        if not name or not passwd:
-            self.write('-1')
-        else:
-            r = self.__regist(name, passwd)
-            if not r:
-                self.write('-1')
-            else:
-                self.write('0')
+        sex    = int(self.get_argument('sex', 0))
+        if not mobile or not passwd or sex not in [1,2]:
+            d = {'code':-1, 'msg':'parameters error'}
+            d = json.dumps(d)
+            self.write(d)
             self.finish()
-    def __regist(self, name, passwd):
-        r = user_regist(name, passwd)
+        else:
+            r = self.__regist(mobile, passwd, sex)
+            d = {}
+            if not r:
+                d = {'code':-2, 'msg':'already exist'}
+            else:
+                d = {'code': 0, 'msg':'ok'}
+            d = json.dumps(d)
+            self.write(d)
+            self.finish()
+    def __regist(self, mobile, passwd, sex):
+        r = user_regist(mobile, passwd, sex)
         return r
 
 class BasicEditHandler(tornado.web.RequestHandler):

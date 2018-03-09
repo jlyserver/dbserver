@@ -4,6 +4,7 @@ create table if not exists user
     id int unsigned primary key auto_increment,
     nick_name varchar(16),
     password  varchar(16) not null,
+    mobile    varchar(16),
     sex tinyint default 0, /*0=unknown 1=male  2=female */
     aim tinyint default 0, /*0=未填 1=交友 2=征婚 3=聊天*/
     age int unsigned default 0,             /*年龄*/

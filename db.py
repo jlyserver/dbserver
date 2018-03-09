@@ -8,23 +8,44 @@ from table import *
 import json
 from sqlalchemy.sql import and_, or_, not_
 
-def user_regist(name, passwd):
+def user_regist(mobile, passwd, sex):
     s = DBSession()
-    u = User(name=name, password=passwd)
+    u = User(mobile=mobile, password=passwd, sex=sex)
+    r = s.query(User).filter(User.mobile == mobile).first()
+    if r:
+        return False
     r = True
     try:
         s.add(u)
         s.commit()
     except:
         r = False
+    if not r:
+        return False
+    r = s.query(User).filter(User.mobile == mobile).first()
+    uid = r.id
+    h  = Hobby(uid)
+    st = Statement(uid)
+    o  = OtherInfo(uid, mobile=mobile, verify_m=1)
+    p  = Picture(uid)
+    s.add(h)
+    s.add(st)
+    s.add(o)
+    s.add(p)
+    r = False
+    try:
+        s.commit()
+        r = True
+    except:
+        r = False
     s.close()
     return r
 
-def query_user_login(name, passwd):
+def query_user_login(mobile, passwd):
     s = DBSession()
     r = {}
     try:
-        r = s.query(User).filter(and_(User.nick_name == name, User.password == passwd)).first()
+        r = s.query(User).filter(and_(User.mobile == mobile, User.password == passwd)).first()
         r = {} if not r else r.dic_return()
     except:
         r = {}

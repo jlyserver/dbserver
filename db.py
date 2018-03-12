@@ -8,6 +8,30 @@ from table import *
 import json
 from sqlalchemy.sql import and_, or_, not_
 
+def verify_mobile(mobile):
+    s = DBSession()
+    r = s.query(User).filter(User.mobile == mobile).first()
+    s.close()
+    return True if r else False
+
+def find_password(mobile, passwd):
+    if not mobile or not passwd:
+        return False
+    s = DBSession()
+    r = s.query(User).filter(User.mobile == mobile).first()
+    if not r:
+        s.close()
+        return False
+    else:
+        s.query(User).filter(User.mobile == mobile).update({User.password:passwd})
+        try:
+            s.commit()
+        except:
+            s.close()
+            return False
+    s.close()
+    return True
+
 def user_regist(mobile, passwd, sex):
     s = DBSession()
     u = User(mobile=mobile, password=passwd, sex=sex)
@@ -563,7 +587,8 @@ def publish_conn(kind, action, **ctx):
     s.close()
     return ctx
 
-__all__=['user_regist', 'query_user', 'query_user_login', 'get_user_info',
+__all__=['verify_mobile', 'find_password',
+         'user_regist', 'query_user', 'query_user_login', 'get_user_info',
          'update_basic','get_ctx_info', 'edit_statement', 'edit_other',
          'publish_conn','query_new', 'find_users']
 

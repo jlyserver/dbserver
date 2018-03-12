@@ -135,6 +135,57 @@ class LoginHandler(tornado.web.RequestHandler):
             d = json.dumps(d)
             self.write(d)
 
+class VerifyHandler(tornado.web.RequestHandler):
+    def post(self):
+        mobile = self.get_argument('mobile', None)
+        if not mobile:
+            d = {'code':0, 'data':'mobile is null'}
+            d = json.dumps(d)
+            self.write(d)
+        else:
+            r = verify_mobile(mobile)
+            d = {}
+            if not r:
+                d = {'code': -1, 'data':'not regist'}
+            else:
+                d = {'code': 0, 'data':'already exist'}
+            d = json.dumps(d)
+            self.write(d)
+            self.finish()
+class FindVerifyHandler(tornado.web.RequestHandler):
+    def post(self):
+        mobile = self.get_argument('mobile', None)
+        if not mobile:
+            d = {'code':-1, 'data':'mobile is null'}
+            d = json.dumps(d)
+            self.write(d)
+        else:
+            r = verify_mobile(mobile)
+            d = {}
+            if not r:
+                d = {'code': -1, 'data':'not regist'}
+            else:
+                d = {'code': 0, 'data':'already exist'}
+            d = json.dumps(d)
+            self.write(d)
+
+class FindPasswordHandler(tornado.web.RequestHandler):
+    def post(self):
+        mobile = self.get_argument('mobile', None)
+        passwd = self.get_argument('password', None)
+        d = {}
+        if not mobile or not passwd:
+            d = {'code':-1, 'msg':'failed'}
+        else:
+            r = find_password(mobile, passwd)
+            if not r:
+                d = {'code': -1, 'msg': 'does not exists'}
+            else:
+                d = {'code': 0, 'msg': 'ok'}
+        d = json.dumps(d)
+        self.write(d)
+
+
 class RegistHandler(tornado.web.RequestHandler):
     def post(self):
         mobile = self.get_argument('mobile', None)
@@ -309,6 +360,9 @@ if __name__ == "__main__":
         ('/indexdata', IndexDataTestHandler),
         ('/login', LoginHandler),
         ('/regist', RegistHandler),
+        ('/verify', VerifyHandler),
+        ('/find_verify', FindVerifyHandler),
+        ('/find_password', FindPasswordHandler),
         ('/basic_edit', BasicEditHandler), 
         ('/statement_edit', StatementEditHandler),
         ('/other_edit', OtherEditHandler),

@@ -8,10 +8,10 @@ create table if not exists user
     sex tinyint default 0, /*0=unknown 1=male  2=female */
     aim tinyint default 0, /*0=未填 1=交友 2=征婚 3=聊天*/
     age int unsigned default 0,             /*年龄*/
-    marriage tinyint default 0,/*0=保密 1=单身 2=非单身 3=已婚 4=丧偶 */
-    xingzuo  tinyint default 0, /*0=unknown 1~12依次顺排星座*/
-    shengxiao tinyint default 0, /*0=unknown 1~12依次顺排生肖*/
-    blood tinyint default 0, /*0=unknown 1=A 2=B 3=AB 4=O */
+    marriage tinyint default 0,/*0=未填 1=单身 2=离异 3=丧偶 */
+    xingzuo  tinyint default 0, /*0=未填 1~12依次顺排星座*/
+    shengxiao tinyint default 0, /*0=未填1~12依次顺排生肖*/
+    blood tinyint default 0, /*0=未填 1=A 2=B 3=AB 4=O */
     salary tinyint default 0, /*月薪 0=未填 1=2000以下 2=2000~5000 3=5000~10000 4=10000~20000 5=20000~50000 6=50000以上*/
     weight int unsigned default 0, /*体重, 单位: kg*/
     height int unsigned default 0, /*身高, 单位: cm*/

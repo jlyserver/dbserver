@@ -99,14 +99,14 @@ class FindHandler(tornado.web.RequestHandler):
 
 class CtxHandler(tornado.web.RequestHandler):
     def post(self):
-        name     = self.get_argument('username', None)
+        mobile   = self.get_argument('mobile', None)
         password = self.get_argument('password', None)
-        if not name or not password:
+        if not mobile or not password:
             r = {'code': -1, 'data': {}, 'msg': 'cookie is invalid'}
             r = json.dumps(r)
             self.write(r)
         else:
-            d = get_ctx_info(name, password)
+            d = get_ctx_info(mobile, password)
             if not d:
                 r = {'code': -1, 'data': {}, 'msg': 'no user exist'}
                 r = json.dumps(r)

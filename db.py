@@ -65,69 +65,85 @@ def user_regist(mobile, passwd, sex):
     s.close()
     return r
 
-def query_user_login(mobile, passwd):
-    s = DBSession()
+def query_user_login(mobile, passwd, s=None):
+    t = s
+    if not s:
+        s = DBSession()
     r = {}
     try:
         r = s.query(User).filter(and_(User.mobile == mobile, User.password == passwd)).first()
         r = {} if not r else r.dic_return()
     except:
         r = {}
-    s.close()
+    if not t:
+        s.close()
     return r
 #根据用户的uid查询内心独白和个性签名
-def query_statement_by_uid(uid):
+def query_statement_by_uid(uid, s=None):
     if not uid:
         return {}
-    s = DBSession()
+    t = s
+    if not t:
+        s = DBSession()
     r = {}
     try:
         r = s.query(Statement).filter(Statement.id == uid).first()
         r = {} if not r else r.dic_return()
     except:
         r = {}
-    s.close()
+    if not t:
+        s.close()
     return r
 #根据用户的uid查询用户的其他信息:qq wx email telephone
-def query_otherinfo_by_uid(uid):
+def query_otherinfo_by_uid(uid, s=None):
     if not uid:
         return {}
-    s = DBSession()
+    t = s
+    if not s:
+        s = DBSession()
     r = {}
     try:
         r = s.query(OtherInfo).filter(OtherInfo.id == uid).first()
         r = {} if not r else r.dic_return()
     except:
         r = {}
-    s.close()
+    if not t:
+        s.close()
     return r
 #根据用户的uid查询对应的图片url
-def query_pic_by_uid(uid):
+def query_pic_by_uid(uid, s=None):
     if not uid:
         return {}
-    s = DBSession()
+    t = s
+    if not t:
+        s = DBSession()
     r = {}
     try:
         r = s.query(Picture).filter(Picture.id == uid).first()
         r = {} if not r else r.dic_array()
     except:
         r = {}
-    s.close()
+    if not t:
+        s.close()
     return r
 
 #根据用户uid查询兴趣爱好
-def query_hobby_by_uid(uid):
+def query_hobby_by_uid(uid, s=None):
     h = Hobby(0)
     null = h.dic_array()
     if not uid:
         return null
-    s = DBSession()
+    t = s
+    if not t:
+        s = DBSession()
     r = null
     try:
         r = s.query(Hobby).filter(Hobby.id == uid).first()
         r = null if not r else r.dic_array()
     except:
         r = null
+    if not t:
+        s.close()
     return r
 
 def get_user_info(uid):
@@ -135,33 +151,37 @@ def get_user_info(uid):
     null = h.dic_array()
     if not uid:
         return {'statement':{}, 'otherinfo':{}, 'pic': {}, 'hobby': null}
-    statement = query_statement_by_uid(uid)
-    otherinfo = query_otherinfo_by_uid(uid)
-    pic       = query_pic_by_uid(uid)
-    hobby     = query_hobby_by_uid(uid)
+    s = DBSession()
+    statement = query_statement_by_uid(uid, s=s)
+    otherinfo = query_otherinfo_by_uid(uid, s=s)
+    pic       = query_pic_by_uid(uid, s=s)
+    hobby     = query_hobby_by_uid(uid, s=s)
+    s.close()
     return {'statement':statement, 'otherinfo':otherinfo, 'pic': pic,\
             'hobby': hobby}
 
-def get_ctx_info(name, password):
+def get_ctx_info(mobile, password):
     c = {}
-    u = query_user_login(name, password)
+    session = DBSession()
+    u = query_user_login(mobile, password, s=session)
     if not u:
+        session.close()
         return {}
     c['user'] = u
     
     uid = u['id']
-    s = query_statement_by_uid(uid)
+    s = query_statement_by_uid(uid, s=session)
     c['statement'] = s
 
-    o = query_otherinfo_by_uid(uid)
+    o = query_otherinfo_by_uid(uid, s=session)
     c['otherinfo'] = o
 
-    p = query_pic_by_uid(uid)
+    p = query_pic_by_uid(uid, s=session)
     c['pic'] = p
 
-    h = query_hobby_by_uid(uid)
+    h = query_hobby_by_uid(uid, s=session)
     c['hobby'] = h
-
+    session.close()
     return c
 #更新个人中心中用户的基本信息
 def update_basic(nick_name=None, aim=None, age=None,\

@@ -79,7 +79,7 @@ class User(Base):
 
     def dic_return(self):
         return { 'id':       self.id,          'nick_name': self.nick_name, 
-                 'password': self.password,    'mobile':    self.mobile,
+                 'mobile':    self.mobile,
                  'sex':       self.sex,
                  'aim':      self.aim,         'age':       self.age,
                  'marriage': self.marriage,    'xingzuo':   self.xingzuo,

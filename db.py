@@ -32,11 +32,15 @@ def find_password(mobile, passwd):
     s.close()
     return True
 
-def user_regist(mobile, passwd, sex):
-    s = DBSession()
+def user_regist(mobile, passwd, sex, s=None):
+    f = s
+    if not f:
+        s = DBSession()
     u = User(mobile=mobile, password=passwd, sex=sex)
     r = s.query(User).filter(User.mobile == mobile).first()
     if r:
+        if not f:
+            s.close()
         return False
     r = True
     try:
@@ -45,6 +49,8 @@ def user_regist(mobile, passwd, sex):
     except:
         r = False
     if not r:
+        if not f:
+            s.close()
         return False
     r = s.query(User).filter(User.mobile == mobile).first()
     uid = r.id
@@ -52,17 +58,20 @@ def user_regist(mobile, passwd, sex):
     st = Statement(uid)
     o  = OtherInfo(uid, mobile=mobile, verify_m=1)
     p  = Picture(uid)
+    a  = User_account(id_=0, uid=uid)
     s.add(h)
     s.add(st)
     s.add(o)
     s.add(p)
+    s.add(a)
     r = False
     try:
         s.commit()
         r = True
     except:
         r = False
-    s.close()
+    if not f:
+        s.close()
     return r
 
 def query_user_login(mobile, passwd, s=None):
@@ -147,42 +156,117 @@ def query_hobby_by_uid(uid, s=None):
     return r
 
 def get_user_info(uid):
-    h = Hobby(0)
-    null = h.dic_array()
     if not uid:
-        return {'statement':{}, 'otherinfo':{}, 'pic': {}, 'hobby': null}
+        return None
     s = DBSession()
     statement = query_statement_by_uid(uid, s=s)
     otherinfo = query_otherinfo_by_uid(uid, s=s)
     pic       = query_pic_by_uid(uid, s=s)
     hobby     = query_hobby_by_uid(uid, s=s)
     s.close()
-    return {'statement':statement, 'otherinfo':otherinfo, 'pic': pic,\
+    return {'statement':statement, 'otherinfo':otherinfo, 'pic': pic,
             'hobby': hobby}
 
-def get_ctx_info(mobile, password):
+def get_ctx_info(uid, s=None):
     c = {}
-    session = DBSession()
-    u = query_user_login(mobile, password, s=session)
-    if not u:
-        session.close()
+    if not uid:
+        return c
+    f = s
+    if not f:
+        s = DBSession()
+    r = s.query(User).filter(User.id == uid).first()
+    if not r:
+        if not f:
+            s.close()
         return {}
-    c['user'] = u
+    c['user'] = r.dic_return()
     
-    uid = u['id']
-    s = query_statement_by_uid(uid, s=session)
+    s = query_statement_by_uid(uid, s=s)
     c['statement'] = s
 
-    o = query_otherinfo_by_uid(uid, s=session)
+    o = query_otherinfo_by_uid(uid, s=s)
     c['otherinfo'] = o
 
-    p = query_pic_by_uid(uid, s=session)
+    p = query_pic_by_uid(uid, s=s)
     c['pic'] = p
 
-    h = query_hobby_by_uid(uid, s=session)
+    h = query_hobby_by_uid(uid, s=s)
     c['hobby'] = h
-    session.close()
+    if not f:
+        s.close()
     return c
+def get_ctx_info_mobile_password(mobile, password, s=None):
+    f = s
+    if not f:
+        s = DBSession()
+    r = query_user_login(mobile, password, s=s)
+    if not r:
+        if not f:
+            s.close()
+        return False
+    uid = r['id']
+    r = get_ctx_info(uid, s=s)
+    return r
+
+def merge_uids(uid, uidsrc, s=None):
+    if not uidsrc or not uid:
+        return False
+    f = s
+    if not f:
+        s = DBSession()
+    ol_ = s.query(OtherInfo).filter(OtherInfo.id == uid).first()
+    or_ = s.query(OtherInfo).filter(OtherInfo.id == uidsrc).first()
+    if not or_:
+        if not f:
+            s.close()
+        return False
+    ol_.mobile = or_.mobile
+    ol_.verify_m = 1
+    ol_.public_m = 1
+
+    if not ol_.wx:
+        ol_.wx = or_.wx
+        ol_.verify_w = or_.verify_w
+        ol_.public_w = or_.public_w
+    else:
+        if ol_.verify_w == 0 and or_.wx and or_.verify_w == 1:
+            ol_.wx = or_.wx
+            ol_.verify_w = or_.verify_w
+            ol_.public_w = or_.public_w
+    if not ol_.qq:
+        ol_.qq = or_.qq
+        ol_.verify_q = or_.verify_q
+        ol_.public_q = or_.public_q
+    else:
+        if ol_.verify_q == 0 and or_.qq and or_.verify_q == 1:
+            ol_.qq = or_.qq
+            ol_.verify_q = or_.verify_q
+            ol_.public_q = or_.public_q
+    s.query(User).filter(User.id == uidsrc).delete(synchronize=False)
+    s.query(OtherInfo).filter(OtherInfo.id == uidsrc).delete(synchronize=False)
+    s.query(Statement).filter(Statement.id == uidsrc).delete(synchronize=False)
+    s.query(Hobby).filter(Hobby.id == uidsrc).delete(synchronize=False)
+    s.query(Picture).filter(Picture.id == uidsrc).delete(synchronize=False)
+    s.commit()
+    ctx = get_ctx_info(uid, s=s)
+    if not f:
+        s.close()
+    return ctx
+
+def merge_mobile(uid, mobile, s=None):
+    f = s
+    if not f:
+        s = DBSession()
+    r = s.query(User).filter(User.mobile == mobile).first()
+    if not l or not r:
+        if not f:
+            s.close()
+        return False
+    ctx = merge_uids(uid, r['id'], s=s)
+    if not f:
+        s.close()
+    return ctx
+
 #更新个人中心中用户的基本信息
 def update_basic(nick_name=None, aim=None, age=None,\
         marriage=None, xingzuo=None, shengxiao=None, blood=None,\
@@ -572,6 +656,90 @@ def edit_other(mobile=None, email=None, wx=None, qq=None, **ctx):
     s.close()
     return ctx
 
+#充值
+def recharge(uid, num, s=None):
+    if not uid or not num or num < 0:
+        return False
+    f = s
+    if not f:
+        s = DBSession()
+    u = s.query(User_account).filter(User_account.id == uid).first()
+    if not u:
+        if not f:
+            s.close()
+        return False
+    u.num = u.num + num
+    r = Money_record(uid=uid, num=num, way=0)
+    s.add(r)
+    s.commit()
+    if not f:
+        s.close()
+    return True
+
+'''
+写一条交易记录
+uid:  发生交易时用户的id
+objid:发生交易时对象id， 当充值时，忽略objid
+way:  发生交易类型 0=充值 1=发送眼缘 2=发信 3=约会帖 4=征婚帖
+num:  发生交易金额 1个=一个示爱豆, 0.1元
+'''
+def write_record(uid, objid, way, num, s=None):
+    if not uid or not way or way not in [0,1,2,3,4] or not num or num < 1:
+        return False
+    f = s
+    if not f:
+        s = DBSession() 
+    r = Money_record(uid=uid, oid=objid, way=way, num=num)
+    s.add(r)
+    s.commit()
+    if not f:
+        s.close()
+    return True
+
+'''
+send_email: 发送邮件
+fid:        发送方的uid
+tid:        接收方的uid
+cnt:        发送邮件的内容
+return:     成功=True 失败=False
+'''
+def send_email(fid, tid, cnt, s=None):
+    if not fid or not tid or not cnt:
+        return False
+    f = s
+    if not f:
+        s = DBSession()
+    e = Email(f=fid, t=tid, c=cnt)
+    s.add(e)
+    s.commit()
+    if not f:
+        s.close()
+    return True
+'''
+根据uid获得邮件
+t:      0=收件箱  非0=发件箱
+uid:    用户id
+limit:  一次请求最多返回limit个邮件
+page:   一页最多展示page个邮件
+next_:  第next_页开始, 下标从0开始
+return:  []数组
+'''
+def get_email_by_uid(uid, limit, page, next_, t=0, s=None):
+    if not uid or not limit or not page or not next_:
+        return []
+
+    f = s
+    if not f:
+        s = DBSession()
+    r = None
+    if t == 0:
+        r = s.query(Email).filter(Email.to_id == uid).limit(limit).offset(page*next_)
+    else:
+        r = s.query(Email).filter(Email.from_id == uid).limit(limit).offset(page*next_)
+    if not f:
+        s.close()
+    return [] if not r else [e.dic_return() for e in r]
+
 def publish_conn(kind, action, **ctx):
     if not kind or not action or not ctx:
         return None
@@ -607,11 +775,14 @@ def publish_conn(kind, action, **ctx):
     s.close()
     return ctx
 
-__all__=['verify_mobile', 'find_password',
+__all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'user_regist', 'query_user', 'query_user_login', 'get_user_info',
          'update_basic','get_ctx_info', 'edit_statement', 'edit_other',
          'publish_conn','query_new', 'find_users']
 
 if __name__ == '__main__':
-    c, r = find_users()
-    print(r)
+    ctx = get_ctx_info_mobile_password('17313615920', '123')
+    print(ctx)
+    print('\n')
+    ctx = get_ctx_info_mobile_password('17313615918', '123')
+    print(ctx)

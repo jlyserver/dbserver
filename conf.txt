@@ -34,4 +34,7 @@ table_statement=statement
 table_otherinfo=otherinfo
 table_picture=picture
 table_hobby=hobby
-
+table_email=email
+table_money_record=money_record
+table_user_account=user_account
+table_look=look

@@ -292,7 +292,94 @@ class Hobby(Base):
         d['arr_flag'] = flag
         return d
 ###########################################
-__all__=['DBSession', 'User', 'Statement', 'OtherInfo', 'Picture', 'Hobby']
+
+class Email(Base):
+    __tablename__ = conf.table_email
+    def __init__(self, id_=0, f=0, t=0, c='', t_=None):
+        if not t_:
+            t_   = time.localtime()
+            now  = time.strftime('%Y-%m-%d %H:%M:%S', t_)
+            self.time_ = now
+        else:
+            self.time_ = t_
+        self.id      = id_
+        self.from_id = f
+        self.to_id   = t
+        self.content = c
+
+    id           = Column(Integer, primary_key=True)
+    from_id      = Column(Integer)
+    to_id        = Column(Integer)
+    content      = Column(String(96))
+    time_        = Column(TIMESTAMP)
+    def dic_return(self):
+        return {'id': self.id,        'from_id': self.from_id,
+                'to_id': self.to_id,  'content': self.content,
+                'time': self.time_}
+###########################################
+
+class Money_record(Base):
+    __tablename__ = conf.table_money_record
+    def __init__(self, id_=0, uid=0, oid=0, way=0, num=0, t=None):
+        if not t:
+            t    = time.localtime()
+            now  = time.strftime('%Y-%m-%d %H:%M:%S', t)
+            self.time_ = now
+        else:
+            self.time_ = t
+        self.id       = id_
+        self.user_id  = uid
+        self.objid    = oid
+        self.way      = way
+        self.num      = num
+    id           = Column(Integer, primary_key=True)
+    user_id      = Column(Integer)
+    objid        = Column(Integer)
+    way          = Column(Integer)
+    num          = Column(Integer)
+    time_        = Column(TIMESTAMP)
+    def dic_return(self):
+        return {'id':   self.id,     'user_id': self.user_id,
+                'objid': self.objid, 'way':  self.way, 
+                'num':     self.num, 'time': self.time_}
+##########################################################
+
+class User_account(Base):
+    __tablename__ = conf.table_user_account
+    def __init__(self, id_=0, uid=0, num=0):
+        self.id     = id_
+        self.userid = uid
+        self.num    = num
+    id           = Column(Integer, primary_key=True)
+    userid       = Column(Integer)
+    num          = Column(Integer)
+    def dic_return(self):
+        return {'id': self.id,   'userid': self.userid, 'num': num}
+###########################################################
+
+class Look(Base):
+    __tablename__ = conf.table_look
+    def __init__(self, id_=0, f=0, to=0, t=None):
+        self.id       = id_
+        self.from_id  = f
+        self.to_id    = to
+        if not t:
+            t    = time.localtime()
+            now  = time.strftime('%Y-%m-%d %H:%M:%S', t)
+            self.time_ = now
+        else:
+            self.time_ = t
+    id           = Column(Integer, primary_key=True)
+    from_id      = Column(Integer)
+    to_id        = Column(Integer)
+    time_        = Column(TIMESTAMP)
+    def dic_return(self):
+        return {'id': self.id,  'from_id':self.from_id,
+                'to_id': self.to_id, 'time': self.time_}
+
+
+__all__=['DBSession', 'User', 'Statement', 'OtherInfo', 'Picture', 'Hobby',
+         'Email', 'Money_record', 'User_account', 'Look']
 '''
 '''
 if __name__ == '__main__':

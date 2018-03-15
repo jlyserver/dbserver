@@ -106,7 +106,7 @@ class CtxHandler(tornado.web.RequestHandler):
             r = json.dumps(r)
             self.write(r)
         else:
-            d = get_ctx_info(mobile, password)
+            d = get_ctx_info_mobile_password(mobile, password)
             if not d:
                 r = {'code': -1, 'data': {}, 'msg': 'no user exist'}
                 r = json.dumps(r)
@@ -117,7 +117,7 @@ class CtxHandler(tornado.web.RequestHandler):
                 self.write(r)
 class LoginHandler(tornado.web.RequestHandler):
     def post(self):
-        moible = self.get_argument('mobile', None)
+        mobile = self.get_argument('mobile', None)
         passwd = self.get_argument('password', None)
         if not mobile or not passwd:
             r = {'code': -1, 'msg': 'mobile or password is null'}
@@ -152,6 +152,24 @@ class VerifyHandler(tornado.web.RequestHandler):
             d = json.dumps(d)
             self.write(d)
             self.finish()
+
+class VerifyMobileHandler(tornado.web.RequestHandler):
+    def post(self):
+        mobile = self.get_argument('mobile', None)
+        uid    = self.get_argument('uid',    None)
+        p = '^(1[356789])[0-9]{9}$'
+        d = {}
+        if not uid or not mobile or not re.match(p, mobile):
+            d = {'code':-1, 'msg':'invalid parameters'}
+        else:
+            ctx = merge_mobile(uid, mobile)
+            if not ctx:
+                d = {'code': -1, 'msg':'invalid parameters'}
+            else:
+                d = {'code': 0, 'msg': 'ok', 'data':ctx}
+        d = json.dumps(d)
+        self.write(d)
+
 class FindVerifyHandler(tornado.web.RequestHandler):
     def post(self):
         mobile = self.get_argument('mobile', None)
@@ -361,6 +379,7 @@ if __name__ == "__main__":
         ('/login', LoginHandler),
         ('/regist', RegistHandler),
         ('/verify', VerifyHandler),
+        ('/verify_mobile', VerifyMobileHandler),
         ('/find_verify', FindVerifyHandler),
         ('/find_password', FindPasswordHandler),
         ('/basic_edit', BasicEditHandler), 

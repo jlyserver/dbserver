@@ -354,7 +354,7 @@ class User_account(Base):
     userid       = Column(Integer)
     num          = Column(Integer)
     def dic_return(self):
-        return {'id': self.id,   'userid': self.userid, 'num': num}
+        return {'id': self.id,   'userid': self.userid, 'num': self.num}
 ###########################################################
 
 class Look(Base):
@@ -383,10 +383,12 @@ __all__=['DBSession', 'User', 'Statement', 'OtherInfo', 'Picture', 'Hobby',
 '''
 '''
 if __name__ == '__main__':
-    h = Hobby(0)
-    a = h.dic_array()
-    b = a.get('arr')
-    for e in b:
-        print(e[0])
-        print(e[1])
+    s = DBSession()
+    a = User_account(id_=0, uid=1)
+    try:
+        s.add(a)
+        s.commit()
+    except:
+        print('error')
+    s.close()
 

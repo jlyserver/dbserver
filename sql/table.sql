@@ -98,7 +98,7 @@ create table if not exists hobby
 /*发送email*/
 create table if not exists email
 (
-    id int unsigned primary key auto_increment,
+    id int unsigned primary key,
     from_id int unsigned not null,
     to_id   int unsigned not null,
     content varchar(96),
@@ -108,7 +108,7 @@ create table if not exists email
 /*用户充值记录*/
 create table if not exists money_record
 (
-    id int unsigned primary key auto_increment,
+    id int unsigned primary key,
     userid int unsigned not null,
     objid  int unsigned not null, /*userid 帖子id 或邮件id*/
     way tinyint unsigned not null,/*0=充值 1=发送眼缘 2=发信 3=约会帖 4=征婚帖 5=从其他账号余额转过来*/
@@ -119,7 +119,7 @@ create table if not exists money_record
 /*用户的账户余额*/
 create table if not exists user_account
 (
-    id int unsigned primary key auto_increment,
+    id int unsigned primary key,
     userid int unsigned not null,
     num    int unsigned not null /*余额总计*/
 ) engine=InnoDB, charset=utf8;
@@ -127,7 +127,7 @@ create table if not exists user_account
 /*我看过谁 谁看过我*/
 create table if not exists look
 (
-    id int unsigned primary key auto_increment,
+    id int unsigned primary key,
     from_id int unsigned not null,
     to_id   int unsigned not null,
     time timestamp default CURRENT_TIMESTAMP

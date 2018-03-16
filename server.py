@@ -99,14 +99,13 @@ class FindHandler(tornado.web.RequestHandler):
 
 class CtxHandler(tornado.web.RequestHandler):
     def post(self):
-        mobile   = self.get_argument('mobile', None)
-        password = self.get_argument('password', None)
-        if not mobile or not password:
+        uid = self.get_argument('uid', None)
+        if not uid:
             r = {'code': -1, 'data': {}, 'msg': 'cookie is invalid'}
             r = json.dumps(r)
             self.write(r)
         else:
-            d = get_ctx_info_mobile_password(mobile, password)
+            d = get_ctx_info(uid)
             if not d:
                 r = {'code': -1, 'data': {}, 'msg': 'no user exist'}
                 r = json.dumps(r)
@@ -146,9 +145,9 @@ class VerifyHandler(tornado.web.RequestHandler):
             r = verify_mobile(mobile)
             d = {}
             if not r:
-                d = {'code': -1, 'data':'not regist'}
+                d = {'code': 0, 'data':'not regist'}
             else:
-                d = {'code': 0, 'data':'already exist'}
+                d = {'code': -1, 'data':'already exist'}
             d = json.dumps(d)
             self.write(d)
             self.finish()
@@ -209,24 +208,22 @@ class RegistHandler(tornado.web.RequestHandler):
         mobile = self.get_argument('mobile', None)
         passwd = self.get_argument('password', None)
         sex    = int(self.get_argument('sex', 0))
-        if not mobile or not passwd or sex not in [1,2]:
-            d = {'code':-1, 'msg':'parameters error'}
+        p = '^(1[356789])[0-9]{9}$'
+        if not mobile or not re.match(p, mobile) or not passwd or sex not in [1,2]:
+            d = {'code':-1, 'msg':'参数错误'}
             d = json.dumps(d)
             self.write(d)
             self.finish()
         else:
-            r = self.__regist(mobile, passwd, sex)
             d = {}
+            r = user_regist(mobile, passwd, sex)
             if not r:
-                d = {'code':-2, 'msg':'already exist'}
+                d = {'code':-2, 'msg':'该号码已被注册过了'}
             else:
-                d = {'code': 0, 'msg':'ok'}
+                d = {'code': 0, 'msg':'注册成功'}
             d = json.dumps(d)
             self.write(d)
             self.finish()
-    def __regist(self, mobile, passwd, sex):
-        r = user_regist(mobile, passwd, sex)
-        return r
 
 class BasicEditHandler(tornado.web.RequestHandler):
     def post(self):

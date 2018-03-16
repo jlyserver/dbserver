@@ -31,7 +31,7 @@ def find_password(mobile, passwd):
             return False
     s.close()
     return True
-
+#用户注册 =False 已经注册或db出错  =True 注册成功
 def user_regist(mobile, passwd, sex, s=None):
     f = s
     if not f:
@@ -69,6 +69,17 @@ def user_regist(mobile, passwd, sex, s=None):
         s.commit()
         r = True
     except:
+        rb = DBSession()
+        rb.query(User).filter(User.id == uid).delete(synchronize_session=False)
+        rb.query(Hobby).filter(Hobby.id == uid).delete(synchronize_session=False)
+        rb.query(Statement).filter(Statement.id == uid).delete(synchronize_session=False)
+        rb.query(OtherInfo).filter(OtherInfo.id == uid).delete(synchronize_session=False)
+        rb.query(Picture).filter(Picture.id == uid).delete(synchronize_session=False)
+        rb.query(User_account).filter(User_account.userid == uid).delete(synchronize_session=False)
+        try:
+            rb.commit()
+        except:
+            rb.close()
         r = False
     if not f:
         s.close()
@@ -154,6 +165,22 @@ def query_hobby_by_uid(uid, s=None):
     if not t:
         s.close()
     return r
+def query_account_by_uid(uid, s=None):
+    a = User_account()
+    null = a.dic_return()
+    if not uid:
+        return null
+    t = s
+    if not t:
+        s = DBSession()
+    try:
+        r = s.query(User_account).filter(User_account.id == uid).first()
+        r = null if not r else r.dic_return()
+    except:
+        r = null
+    if not t:
+        s.close()
+    return r
 
 def get_user_info(uid):
     if not uid:
@@ -181,8 +208,8 @@ def get_ctx_info(uid, s=None):
         return {}
     c['user'] = r.dic_return()
     
-    s = query_statement_by_uid(uid, s=s)
-    c['statement'] = s
+    st = query_statement_by_uid(uid, s=s)
+    c['statement'] = st
 
     o = query_otherinfo_by_uid(uid, s=s)
     c['otherinfo'] = o
@@ -192,6 +219,9 @@ def get_ctx_info(uid, s=None):
 
     h = query_hobby_by_uid(uid, s=s)
     c['hobby'] = h
+
+    a = query_account_by_uid(uid, s=s)
+    c['account'] = a
     if not f:
         s.close()
     return c
@@ -242,11 +272,11 @@ def merge_uids(uid, uidsrc, s=None):
             ol_.qq = or_.qq
             ol_.verify_q = or_.verify_q
             ol_.public_q = or_.public_q
-    s.query(User).filter(User.id == uidsrc).delete(synchronize=False)
-    s.query(OtherInfo).filter(OtherInfo.id == uidsrc).delete(synchronize=False)
-    s.query(Statement).filter(Statement.id == uidsrc).delete(synchronize=False)
-    s.query(Hobby).filter(Hobby.id == uidsrc).delete(synchronize=False)
-    s.query(Picture).filter(Picture.id == uidsrc).delete(synchronize=False)
+    s.query(User).filter(User.id == uidsrc).delete(synchronize_session=False)
+    s.query(OtherInfo).filter(OtherInfo.id == uidsrc).delete(synchronize_session=False)
+    s.query(Statement).filter(Statement.id == uidsrc).delete(synchronize_session=False)
+    s.query(Hobby).filter(Hobby.id == uidsrc).delete(synchronize_session=False)
+    s.query(Picture).filter(Picture.id == uidsrc).delete(synchronize_session=False)
     s.commit()
     ctx = get_ctx_info(uid, s=s)
     if not f:
@@ -781,8 +811,4 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'publish_conn','query_new', 'find_users']
 
 if __name__ == '__main__':
-    ctx = get_ctx_info_mobile_password('17313615920', '123')
-    print(ctx)
-    print('\n')
-    ctx = get_ctx_info_mobile_password('17313615918', '123')
-    print(ctx)
+    pass

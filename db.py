@@ -8,30 +8,36 @@ from table import *
 import json
 from sqlalchemy.sql import and_, or_, not_
 
+'''
+mobile 手机号码
+return: True=手机号存在     False=手机号不存在
+'''
 def verify_mobile(mobile):
     s = DBSession()
     r = s.query(User).filter(User.mobile == mobile).first()
     s.close()
     return True if r else False
-
+#充值密码 {}=失败  ctx=成功
 def find_password(mobile, passwd):
     if not mobile or not passwd:
-        return False
+        return {}
     s = DBSession()
     r = s.query(User).filter(User.mobile == mobile).first()
     if not r:
         s.close()
-        return False
+        return {}
     else:
         s.query(User).filter(User.mobile == mobile).update({User.password:passwd})
         try:
             s.commit()
         except:
             s.close()
-            return False
+            return {}
+    uid = r.id
+    ctx = get_ctx_info(uid, s=s)
     s.close()
-    return True
-#用户注册 =False 已经注册或db出错  =True 注册成功
+    return ctx
+#用户注册 ={} 已经注册或db出错  =ctx{}注册成功
 def user_regist(mobile, passwd, sex, s=None):
     f = s
     if not f:
@@ -41,7 +47,7 @@ def user_regist(mobile, passwd, sex, s=None):
     if r:
         if not f:
             s.close()
-        return False
+        return {}
     r = True
     try:
         s.add(u)
@@ -51,23 +57,23 @@ def user_regist(mobile, passwd, sex, s=None):
     if not r:
         if not f:
             s.close()
-        return False
+        return {}
     r = s.query(User).filter(User.mobile == mobile).first()
     uid = r.id
     h  = Hobby(uid)
     st = Statement(uid)
     o  = OtherInfo(uid, mobile=mobile, verify_m=1)
     p  = Picture(uid)
-    a  = User_account(id_=0, uid=uid)
+    a  = User_account(id_=uid)
     s.add(h)
     s.add(st)
     s.add(o)
     s.add(p)
     s.add(a)
-    r = False
+    res = False
     try:
         s.commit()
-        r = True
+        res = True
     except:
         rb = DBSession()
         rb.query(User).filter(User.id == uid).delete(synchronize_session=False)
@@ -80,10 +86,13 @@ def user_regist(mobile, passwd, sex, s=None):
             rb.commit()
         except:
             rb.close()
-        r = False
+        res = False
+    ctx = {}
+    if res:
+        ctx = get_ctx_info(uid, s=s)
     if not f:
         s.close()
-    return r
+    return ctx
 
 def query_user_login(mobile, passwd, s=None):
     t = s
@@ -811,4 +820,5 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'publish_conn','query_new', 'find_users']
 
 if __name__ == '__main__':
-    pass
+    r = user_regist('17313615918', '123', 1)
+    print(r)

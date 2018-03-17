@@ -133,25 +133,26 @@ class LoginHandler(tornado.web.RequestHandler):
                 d = {'code': 0, 'msg': 'ok', 'data': info}
             d = json.dumps(d)
             self.write(d)
-
+#注册发送验证码
 class VerifyHandler(tornado.web.RequestHandler):
     def post(self):
         mobile = self.get_argument('mobile', None)
         if not mobile:
-            d = {'code':0, 'data':'mobile is null'}
+            d = {'code':-1, 'msg':'电话号码不正确'}
             d = json.dumps(d)
             self.write(d)
         else:
             r = verify_mobile(mobile)
             d = {}
+            #注册
             if not r:
-                d = {'code': 0, 'data':'not regist'}
+                d = {'code': 0, 'msg':'手机号不存在'}#表示可以注册
             else:
-                d = {'code': -1, 'data':'already exist'}
+                d = {'code': -1, 'msg':'手机号已存在'}#表示不可以注册
             d = json.dumps(d)
             self.write(d)
             self.finish()
-
+#验证手机发送验证码
 class VerifyMobileHandler(tornado.web.RequestHandler):
     def post(self):
         mobile = self.get_argument('mobile', None)
@@ -173,16 +174,16 @@ class FindVerifyHandler(tornado.web.RequestHandler):
     def post(self):
         mobile = self.get_argument('mobile', None)
         if not mobile:
-            d = {'code':-1, 'data':'mobile is null'}
+            d = {'code':-1, 'msg':'电话号码为空'}
             d = json.dumps(d)
             self.write(d)
         else:
             r = verify_mobile(mobile)
             d = {}
             if not r:
-                d = {'code': -1, 'data':'not regist'}
+                d = {'code': -1, 'msg':'手机号不存在'}#表示不可以找回
             else:
-                d = {'code': 0, 'data':'already exist'}
+                d = {'code': 0, 'msg':'手机号已存在', 'data':r}#表示可以找回
             d = json.dumps(d)
             self.write(d)
 
@@ -192,13 +193,13 @@ class FindPasswordHandler(tornado.web.RequestHandler):
         passwd = self.get_argument('password', None)
         d = {}
         if not mobile or not passwd:
-            d = {'code':-1, 'msg':'failed'}
+            d = {'code':-1, 'msg':'手机号和密码不能为空'}
         else:
             r = find_password(mobile, passwd)
             if not r:
-                d = {'code': -1, 'msg': 'does not exists'}
+                d = {'code': -1, 'msg': '手机号不存在'}
             else:
-                d = {'code': 0, 'msg': 'ok'}
+                d = {'code': 0, 'msg': '重置密码成功', 'data':r}
         d = json.dumps(d)
         self.write(d)
 
@@ -220,7 +221,7 @@ class RegistHandler(tornado.web.RequestHandler):
             if not r:
                 d = {'code':-2, 'msg':'该号码已被注册过了'}
             else:
-                d = {'code': 0, 'msg':'注册成功'}
+                d = {'code': 0, 'msg':'注册成功', 'data':r}
             d = json.dumps(d)
             self.write(d)
             self.finish()

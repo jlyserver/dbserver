@@ -217,7 +217,7 @@ class Picture(Base):
 ###########################################
 class Hobby(Base):
     __tablename__ = conf.table_hobby
-    def __init__(self, id_, ps=0, sy=0, yy=0, dy=0, ly=0, \
+    def __init__(self, id_=0, ps=0, sy=0, yy=0, dy=0, ly=0, \
                  yx=0, js=0, ms=0, pb=0, gj=0, cg=0, \
                  tw=0, pk=0, mj=0, wg=0, ks=0):
         self.id       = id_
@@ -268,25 +268,25 @@ class Hobby(Base):
     def dic_array(self):
         a = []
         d = {'id': self.id}
-        a.append(['爬山', int(self.pashan)])
-        a.append(['摄影', int(self.sheying)])
-        a.append(['音乐', int(self.yinyue)])
-        a.append(['电影', int(self.dianying)])
-        a.append(['旅游', int(self.lvyou)])
-        a.append(['游戏', int(self.youxi)])
-        a.append(['健身', int(self.jianshen)])
-        a.append(['美食', int(self.meishi)])
-        a.append(['跑步', int(self.paobu)])
-        a.append(['逛街', int(self.guangjie)])
-        a.append(['唱歌', int(self.changge)])
-        a.append(['跳舞', int(self.tiaowu)])
-        a.append(['扑克', int(self.puke)])
-        a.append(['麻将', int(self.majiang)])
-        a.append(['网购', int(self.wanggou)])
+        a.append(int(self.pashan))
+        a.append(int(self.sheying))
+        a.append(int(self.yinyue))
+        a.append(int(self.dianying))
+        a.append(int(self.lvyou))
+        a.append(int(self.youxi))
+        a.append(int(self.jianshen))
+        a.append(int(self.meishi))
+        a.append(int(self.paobu))
+        a.append(int(self.guangjie))
+        a.append(int(self.changge))
+        a.append(int(self.tiaowu))
+        a.append(int(self.puke))
+        a.append(int(self.majiang))
+        a.append(int(self.wanggou))
         d['arr'] = a
         flag = 0
         for e in a:
-            if e[1] == 1:
+            if e == 1:
                 flag = 1
                 break
         d['arr_flag'] = flag
@@ -346,15 +346,13 @@ class Money_record(Base):
 
 class User_account(Base):
     __tablename__ = conf.table_user_account
-    def __init__(self, id_=0, uid=0, num=0):
+    def __init__(self, id_=0, num=0):
         self.id     = id_
-        self.userid = uid
         self.num    = num
     id           = Column(Integer, primary_key=True)
-    userid       = Column(Integer)
     num          = Column(Integer)
     def dic_return(self):
-        return {'id': self.id,   'userid': self.userid, 'num': self.num}
+        return {'id': self.id,   'num': self.num}
 ###########################################################
 
 class Look(Base):

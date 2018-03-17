@@ -120,7 +120,6 @@ create table if not exists money_record
 create table if not exists user_account
 (
     id int unsigned primary key,
-    userid int unsigned not null,
     num    int unsigned not null /*余额总计*/
 ) engine=InnoDB, charset=utf8;
 

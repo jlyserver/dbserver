@@ -27,7 +27,7 @@ class User(Base):
     def __init__(self, id_=0, name='', password='', mobile='',
             sex=0, aim=0, age=18,\
             m=0, xz=0, sx=0, blood=0, salary=0, wt=50, ht=160, de=0, \
-            na='汉族', cl1='', cl2='', ori1='', ori2='', t=None):
+            na='汉族', cl1='', cl2='', ori1='', ori2='', st=0, t=None):
         self.id       = id_
         self.nick_name= name
         self.password = password
@@ -48,6 +48,7 @@ class User(Base):
         self.curr_loc2= cl2
         self.ori_loc1 = ori1
         self.ori_loc2 = ori2
+        self.state    = st
         if not t:
             t       = time.localtime()
             now     = time.strftime('%Y-%m-%d %H:%M:%S', t)
@@ -75,6 +76,7 @@ class User(Base):
     curr_loc2         = Column(String(8))
     ori_loc1          = Column(String(8))
     ori_loc2          = Column(String(8))
+    state             = Column(Integer)
     regist_time       = Column(TIMESTAMP)
 
     def dic_return(self):
@@ -89,6 +91,7 @@ class User(Base):
                  'degree':   self.degree,      'nation':    self.nation,
                  'curr_loc1':self.curr_loc1,   'curr_loc2': self.curr_loc2, 
                  'ori_loc1': self.ori_loc1,    'ori_loc2':  self.ori_loc2,
+                 'state':    self.state,
                  'regist_time': str(self.regist_time)}
     def dic_return2(self):
         return { 'id':       self.id,          'nick_name': self.nick_name,
@@ -283,6 +286,7 @@ class Hobby(Base):
         a.append(int(self.puke))
         a.append(int(self.majiang))
         a.append(int(self.wanggou))
+        a.append(int(self.kanshu))
         d['arr'] = a
         flag = 0
         for e in a:

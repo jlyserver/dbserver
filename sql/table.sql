@@ -21,6 +21,7 @@ create table if not exists user
     curr_loc2 varchar(8) default '', /*现在所在市(区)*/
     ori_loc1  varchar(8) default '', /*籍贯所在省(直辖市)*/
     ori_loc2  varchar(8) default '', /*籍贯所在市(区)*/
+    state tinyint default 0, /*征友状态 0=征友进行中 1=找到意中人*/
     regist_time timestamp default CURRENT_TIMESTAMP not null
 ) engine=InnoDB, charset=utf8;
 

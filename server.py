@@ -304,15 +304,15 @@ class StatementEditHandler(tornado.web.RequestHandler):
 class OtherEditHandler(tornado.web.RequestHandler):
     def post(self):
         ctx       = self.get_argument('ctx', None)
-        mobile    = self.get_argument('mobile', None)
-        email     = self.get_argument('email', None)
-        wx        = self.get_argument('wx', None)
-        qq        = self.get_argument('qq', None)
+        salary    = self.get_argument('salary', None)
+        work      = self.get_argument('work', None)
+        car       = self.get_argument('car', None)
+        house     = self.get_argument('house', None)
         if not ctx:
             r = {'code': -1, 'msg':'invalid', 'data': {}}
             r = json.dumps(r)
             self.write(r)
-        elif not mobile and not email and not wx and not qq:
+        elif not salary and not work and not car and not house:
             r = {'code': -1, 'msg':'noneed', 'data': {}}
             r = json.dumps(r)
             self.write(r)
@@ -327,7 +327,7 @@ class OtherEditHandler(tornado.web.RequestHandler):
                 r = json.dumps(r)
                 self.write(r)
             else:
-                r = edit_other(mobile, email, wx, qq, **d)
+                r = edit_other(salary, work, car, house, **d)
                 if not r:
                     r = {'code': -1, 'msg': '编辑失败'}
                 else:

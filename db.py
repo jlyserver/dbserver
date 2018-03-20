@@ -1,12 +1,19 @@
 #-*- coding: utf8 -*-
 
 import time
+import hashlib
 from conf import conf
 from cache import cache
 
 from table import *
 import json
 from sqlalchemy.sql import and_, or_, not_
+
+def digest(word):
+    m2 = hashlib.md5()
+    m2.update(word)
+    token = m2.hexdigest()
+    return token
 
 '''
 mobile 手机号码
@@ -17,7 +24,7 @@ def verify_mobile(mobile):
     r = s.query(User).filter(User.mobile == mobile).first()
     s.close()
     return True if r else False
-#充值密码 {}=失败  ctx=成功
+#找回密码 {}=失败  ctx=成功
 def find_password(mobile, passwd):
     if not mobile or not passwd:
         return {}
@@ -27,7 +34,8 @@ def find_password(mobile, passwd):
         s.close()
         return {}
     else:
-        s.query(User).filter(User.mobile == mobile).update({User.password:passwd})
+        tok = digest(passwd)
+        s.query(User).filter(User.mobile == mobile).update({User.password:tok})
         try:
             s.commit()
         except:
@@ -37,12 +45,14 @@ def find_password(mobile, passwd):
     ctx = get_ctx_info(uid, s=s)
     s.close()
     return ctx
+
 #用户注册 ={} 已经注册或db出错  =ctx{}注册成功
 def user_regist(mobile, passwd, sex, s=None):
     f = s
     if not f:
         s = DBSession()
-    u = User(mobile=mobile, password=passwd, sex=sex)
+    tok = digest(passwd)
+    u = User(mobile=mobile, password=tok, sex=sex)
     r = s.query(User).filter(User.mobile == mobile).first()
     if r:
         if not f:
@@ -100,7 +110,8 @@ def query_user_login(mobile, passwd, s=None):
         s = DBSession()
     r = {}
     try:
-        r = s.query(User).filter(and_(User.mobile == mobile, User.password == passwd)).first()
+        tok = digest(passwd)
+        r = s.query(User).filter(and_(User.mobile == mobile, User.password == tok)).first()
         r = {} if not r else r.dic_return()
     except:
         r = {}
@@ -191,18 +202,30 @@ def query_account_by_uid(uid, s=None):
         s.close()
     return r
 
-def get_user_info(uid):
+def get_user_info(uid, s=None):
     if not uid:
         return None
-    s = DBSession()
+    f = s
+    if not f:
+        s = DBSession()
     statement = query_statement_by_uid(uid, s=s)
     otherinfo = query_otherinfo_by_uid(uid, s=s)
     pic       = query_pic_by_uid(uid, s=s)
     hobby     = query_hobby_by_uid(uid, s=s)
-    s.close()
+    account   = query_account_by_uid(uid, s=s)
+    if not f:
+        s.close()
     return {'statement':statement, 'otherinfo':otherinfo, 'pic': pic,
-            'hobby': hobby}
-
+            'hobby': hobby, 'account': account}
+'''
+根据uid获得用户的信息:
+  user:{} //见user表
+  statement: {} //见statement表
+  otherinfo: {} //见otherinfo表
+  pic: {} //见picture表
+  hobby: {} //见hobby表
+  account: {} //见account表
+'''
 def get_ctx_info(uid, s=None):
     c = {}
     if not uid:
@@ -247,66 +270,8 @@ def get_ctx_info_mobile_password(mobile, password, s=None):
     r = get_ctx_info(uid, s=s)
     return r
 
-def merge_uids(uid, uidsrc, s=None):
-    if not uidsrc or not uid:
-        return False
-    f = s
-    if not f:
-        s = DBSession()
-    ol_ = s.query(OtherInfo).filter(OtherInfo.id == uid).first()
-    or_ = s.query(OtherInfo).filter(OtherInfo.id == uidsrc).first()
-    if not or_:
-        if not f:
-            s.close()
-        return False
-    ol_.mobile = or_.mobile
-    ol_.verify_m = 1
-    ol_.public_m = 1
-
-    if not ol_.wx:
-        ol_.wx = or_.wx
-        ol_.verify_w = or_.verify_w
-        ol_.public_w = or_.public_w
-    else:
-        if ol_.verify_w == 0 and or_.wx and or_.verify_w == 1:
-            ol_.wx = or_.wx
-            ol_.verify_w = or_.verify_w
-            ol_.public_w = or_.public_w
-    if not ol_.qq:
-        ol_.qq = or_.qq
-        ol_.verify_q = or_.verify_q
-        ol_.public_q = or_.public_q
-    else:
-        if ol_.verify_q == 0 and or_.qq and or_.verify_q == 1:
-            ol_.qq = or_.qq
-            ol_.verify_q = or_.verify_q
-            ol_.public_q = or_.public_q
-    s.query(User).filter(User.id == uidsrc).delete(synchronize_session=False)
-    s.query(OtherInfo).filter(OtherInfo.id == uidsrc).delete(synchronize_session=False)
-    s.query(Statement).filter(Statement.id == uidsrc).delete(synchronize_session=False)
-    s.query(Hobby).filter(Hobby.id == uidsrc).delete(synchronize_session=False)
-    s.query(Picture).filter(Picture.id == uidsrc).delete(synchronize_session=False)
-    s.commit()
-    ctx = get_ctx_info(uid, s=s)
-    if not f:
-        s.close()
-    return ctx
-
-def merge_mobile(uid, mobile, s=None):
-    f = s
-    if not f:
-        s = DBSession()
-    r = s.query(User).filter(User.mobile == mobile).first()
-    if not l or not r:
-        if not f:
-            s.close()
-        return False
-    ctx = merge_uids(uid, r['id'], s=s)
-    if not f:
-        s.close()
-    return ctx
-
 #更新个人中心中用户的基本信息
+#return ctx
 def update_basic(nick_name=None, aim=None, age=None,\
         marriage=None, xingzuo=None, shengxiao=None, blood=None,\
         weight=None, height=None, degree=None, nation=None,\
@@ -322,55 +287,38 @@ def update_basic(nick_name=None, aim=None, age=None,\
         u[User.nick_name] = nick_name
         ctx['user']['nick_name'] = nick_name
     if aim:
-        u[User.aim] = aim
-        arr = [u'未填', u'交友', u'征婚', u'聊天']
-        i = 0 if int(aim) < 0 or int(aim) >= len(arr) else int(aim)
+        u[User.aim] = int(aim)
         ctx['user']['aim'] = arr[i]
     if age:
         u[User.age] = int(age)
         ctx['user']['age'] = int(age)
     if marriage:
-        u[User.marriage] = marriage
-        arr = [u'保密', u'单身', u'非单身', u'已婚', u'丧偶']
-        i = 0 if int(marriage) < 0 or int(marriage) >= len(arr) else int(marriage)
+        u[User.marriage] = int(marriage)
         ctx['user']['marriage'] = arr[i]
-    xz = [u'未填', u'白羊座', u'金牛座', u'双子座', u'巨蟹座', u'狮子座',
-         u'处女座', u'天秤座', u'天蝎座', u'射手座', u'摩羯座', u'水瓶座', 
-         u'双鱼座']
     if xingzuo:
-        u[User.xingzuo] = xingzuo
-        i = int(xingzuo)
-        i = 0 if i < 0 or i >= len(xz) else i
-        ctx['user']['xingzuo'] = xz[i]
-    sx = [u'未填', u'鼠', u'牛', u'虎', u'兔', u'龙', u'蛇', u'马',
-          u'羊', u'猴', u'鸡', u'狗', u'猪']
+        u[User.xingzuo] = int(xingzuo)
+        ctx['user']['xingzuo'] = int(xingzuo)
     if shengxiao:
-        u[User.shengxiao] = shengxiao
         i = int(shengxiao)
-        i = 0 if i < 0 or i >= len(sx) else i
-        ctx['user']['shengxiao'] = sx[i]
-    bd = [u'未填', 'A', 'B', 'AB', 'O']
+        u[User.shengxiao] = i
+        ctx['user']['shengxiao'] = i
     if blood:
-        u[User.blood] = blood
         i = int(blood)
-        i = 0 if i < 0 or i >= len(bd) else i
-        ctx['user']['blood'] = bd[i]
+        u[User.blood] = i
+        ctx['user']['blood'] = i
     if weight:
         u[User.weight] = int(weight)
         ctx['user']['weight'] = int(weight)
     if height:
         u[User.height] = int(height)
         ctx['user']['height'] = int(height)
-    xl=[u'保密',   u'高中及以下', u'中专/大专', u'本科',
-        u'研究生', u'博士及博士后']
     if degree:
-        u[User.degree] = degree
         i = int(degree)
-        i = 0 if i < 0 or i >= len(xl) else i
-        ctx['user']['degree'] = xl[i]
+        u[User.degree] = i
+        ctx['user']['degree'] = i
     if nation:
-        u[User.nation] = nation
-        ctx['user']['nation'] = nation
+        u[User.nation] = int(nation)
+        ctx['user']['nation'] = int(nation)
     if cur_loc1:
         u[User.curr_loc1] = cur_loc1
         ctx['user']['curr_loc1'] = cur_loc1
@@ -390,70 +338,36 @@ def update_basic(nick_name=None, aim=None, age=None,\
          Hobby.puke: '0',    Hobby.majiang:'0', Hobby.wanggou:'0',
          Hobby.kanshu:'0' }
     hc = Hobby(uid)
-    for e in hobby:
-        if e == u'爬山':
-            h[Hobby.pashan], hc.pashan = '1', '1'
-        if e == u'摄影':
-            h[Hobby.sheying], hc.sheying = '1', '1'
-        if e == u'音乐':
-            h[Hobby.yinyue], hc.yinyue  = '1', '1'
-        if e == u'电影':
-            h[Hobby.dianying], hc.dianying = '1', '1'
-        if e == u'旅游':
-            h[Hobby.lvyou], hc.lvyou = '1', '1'
-        if e == u'游戏':
-            h[Hobby.youxi], hc.youxi = '1', '1'
-        if e == u'健身':
-            h[Hobby.jianshen], hc.jianshen = '1', '1'
-        if e == u'美食':
-            h[Hobby.meishi], hc.meishi = '1', '1'
-        if e == u'跑步':
-            h[Hobby.paobu], hc.paobu = '1', '1'
-        if e == u'逛街':
-            h[Hobby.guangjie], hc.guangjie = '1', '1'
-        if e == u'唱歌':
-            h[Hobby.changge], hc.changge = '1', '1'
-        if e == u'跳舞':
-            h[Hobby.tiaowu], hc.tiaowu = '1', '1'
-        if e == u'扑克':
-            h[Hobby.puke], hc.puke = '1', '1'
-        if e == u'麻将':
-            h[Hobby.majiang], hc.majiang = '1', '1'
-        if e == u'网购':
-            h[Hobby.wanggou], hc.wanggou = '1', '1'
-        if e == u'看书':
-            h[Hobby.kanshu], hc.kanshu = '1', '1'
+    hn = len(hobby)
+    hc.pashan   = hobby[0] if 0 < hn else 0
+    hc.sheying  = hobby[1] if 1 < hn else 0
+    hc.yinyue   = hobby[2] if 2 < hn else 0
+    hc.dianying = hobby[3] if 3 < hn else 0
+    hc.lvyou    = hobby[4] if 4 < hn else 0
+    hc.youxi    = hobby[5] if 5 < hn else 0
+    hc.jianshen = hobby[6] if 6 < hn else 0
+    hc.meishi   = hobby[7] if 7 < hn else 0
+    hc.paobu    = hobby[8] if 8 < hn else 0
+    hc.guangjie = hobby[9] if 9 < hn else 0
+    hc.changge  = hobby[10] if 10 < hn else 0
+    hc.tiaowu   = hobby[11] if 11 < hn else 0
+    hc.puke     = hobby[12] if 12 < hn else 0
+    hc.majiang  = hobby[13] if 13 < hn else 0
+    hc.wanggou  = hobby[14] if 14 < hn else 0
+    hc.kanshu   = hobby[15] if 15 < hn else 0
     ctx['hobby'] = hc.dic_array()
     s = DBSession() 
 
     if u:
-        try:
-            ru = s.query(User).filter(User.id == uid).update(u)
-            s.commit()
-        except Exception, e:
-            return None
-    r  = s.query(Statement).filter(Statement.id == uid).first()
+        ru = s.query(User).filter(User.id == uid).update(u)
     motto = '' if not motto else motto
-    if not r:
-        st = Statement(uid, motto, '')
-        s.add(st)
-        try:
-            s.commit()
-        except Exception, e:
-            return None
-    else:
-        st = {Statement.motto: motto}
-        r = s.query(Statement).filter(Statement.id == uid).update(st)
-        s.commit()
+    st = {Statement.motto: motto}
+    s.query(Statement).filter(Statement.id == uid).update(st)
     if ctx.get('statement'):
         ctx['statement']['motto'] = motto
     else:
         ctx['statement'] = {'id': uid, 'motto': motto, 'content':''}
-    r  = s.query(Hobby).filter(Hobby.id == uid).first()
-    if not r:
-        s.add(hc)
-    else:
-        rh = s.query(Hobby).filter(Hobby.id == uid).update(h)
+    rh = s.query(Hobby).filter(Hobby.id == uid).update(h)
     s.commit()
     return ctx
 
@@ -647,20 +561,14 @@ def edit_statement(cnt, **ctx):
     sc.content = cnt
 
     s = DBSession()
-    r = s.query(Statement).filter(Statement.id == uid).first()
-    if not r:
-        s.add(sc)
-        s.commit()
-        ctx['statement'] = {'id': uid, 'motto':'', 'content':cnt}
-    else:
-        s.query(Statement).filter(Statement.id == uid).update(su)
-        s.commit()
-        ctx['statement']['content'] = cnt
+    s.query(Statement).filter(Statement.id == uid).update(su)
+    s.commit()
+    ctx['statement']['content'] = cnt
     s.close()
     return ctx
 
-def edit_other(mobile=None, email=None, wx=None, qq=None, **ctx):
-    if not mobile and not email and not wx and not qq:
+def edit_other(salary=None, work=None, car=None, house=None, **ctx):
+    if not salary and not work and not car and not house:
         return None
     if not ctx:
         return None
@@ -668,30 +576,22 @@ def edit_other(mobile=None, email=None, wx=None, qq=None, **ctx):
     if not uid:
         return None
     ou  = {}
-    oc  = OtherInfo(uid)
-    if mobile:
-        oc.mobile = ou[OtherInfo.mobile] = mobile
-    if email:
-        oc.email  = ou[OtherInfo.email]  = email
-    if wx:
-        oc.wx     = ou[OtherInfo.wx] = wx
-    if qq:
-        oc.qq     = ou[OtherInfo.qq] = qq
+    if salary:
+        ou[OtherInfo.salary] = salary
+        ctx['otherinfo']['salary'] = salary
+    if work:
+        ou[OtherInfo.work]  = work 
+        ctx['otherinfo']['work'] = work
+    if car:
+        ou[OtherInfo.car] = car
+        ctx['otherinfo']['car'] = car
+    if house:
+        ou[OtherInfo.house] = house 
+        ctx['otherinfo']['house'] = house
 
     s = DBSession()
-    r = s.query(OtherInfo).filter(OtherInfo.id == uid).first()
-    if not r:
-        s.add(oc)
-        s.commit()
-        ctx['otherinfo'] = oc.dic_return()
-    else:
-        ctx['otherinfo'] = r.dic_return()
-        s.query(OtherInfo).filter(OtherInfo.id == uid).update(ou)
-        s.commit()
-        ctx['otherinfo']['wx'] = wx if wx else ''
-        ctx['otherinfo']['qq'] = qq if qq else ''
-        ctx['otherinfo']['mobile'] = mobile if mobile else ''
-        ctx['otherinfo']['email'] = email if email else ''
+    s.query(OtherInfo).filter(OtherInfo.id == uid).update(ou)
+    s.commit()
     s.close()
     return ctx
 

@@ -3,7 +3,7 @@ create table if not exists user
 (
     id int unsigned primary key auto_increment,
     nick_name varchar(16),
-    password  varchar(16) not null,
+    password  varchar(32) not null,
     mobile    varchar(16),
     sex tinyint default 0, /*0=unknown 1=male  2=female */
     aim tinyint default 0, /*0=未填 1=交友 2=征婚 3=聊天*/
@@ -16,7 +16,7 @@ create table if not exists user
     weight int unsigned default 0, /*体重, 单位: kg*/
     height int unsigned default 0, /*身高, 单位: cm*/
     degree int default 0, /*0=保密 1=高中及以下 2=中专/大专 3=本科 4=研究生 5=博士及博士后 */
-    nation varchar(6) default '未填', /*民族*/
+    nation tinyint default 0, /*民族 0=未填 1~56百度民族顺序*/
     curr_loc1 varchar(8) default '', /*现在所在省(直辖市)*/
     curr_loc2 varchar(8) default '', /*现在所在市(区)*/
     ori_loc1  varchar(8) default '', /*籍贯所在省(直辖市)*/

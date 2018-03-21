@@ -334,7 +334,30 @@ class OtherEditHandler(tornado.web.RequestHandler):
                     r = {'code': 0, 'msg': '编辑成功', 'data': r}
                 r = json.dumps(r)
                 self.write(r)
-            
+
+class VerifyOtherHandler(tornado.web.RequestHandler):
+    def post(self):
+        kind = int(self.get_argument('kind', 0))
+        ctx  = self.get_argument('ctx',  None)
+        num  = self.get_argument('num',  None)
+        d = {}
+        if not ctx or not kind or not num:
+            d = {'code':-1, 'msg':'参数错误'}
+        else:
+            try:
+                ctx = json.loads(ctx)
+            except:
+                d = {}
+            if not d:
+                r = {'code': -1, 'msg': 'invalid ctx'}
+            else:
+                r = verify_wx_qq_email(num, kind, **ctx)
+                if r:
+                    d = {'code': 0, 'msg': '验证成功', 'data': r}
+                else:
+                    d = {'code': -1, 'msg': '验证失败'}
+        d = json.dumps(d)
+        self.write(d)
 class PublishHandler(tornado.web.RequestHandler):
     def post(self):
         ctx       = self.get_argument('ctx', None)
@@ -383,6 +406,7 @@ if __name__ == "__main__":
         ('/basic_edit', BasicEditHandler), 
         ('/statement_edit', StatementEditHandler),
         ('/other_edit', OtherEditHandler),
+        ('/verify_other', VerifyOtherHandler),
        #('/publish', PublishHandler),
         ('/new', IndexNewHandler),
         ('/find', FindHandler),

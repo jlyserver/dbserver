@@ -26,6 +26,8 @@ class Picconf():
         self.toffset_new_male= p.getint('toffset', 'new_male')
         self.toffset_new_female = p.getint('toffset', 'new_female')
 
+        self.digest_salt     = p.get('digest', 'digest_salt')
+
         self.table_user      = p.get('table', 'table_user')
         self.table_statement = p.get('table', 'table_statement')
         self.table_otherinfo = p.get('table', 'table_otherinfo')

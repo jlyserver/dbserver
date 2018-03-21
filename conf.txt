@@ -27,6 +27,8 @@ new_male=4
 #新注册女会员展示个数
 new_female=4
 
+[digest]
+digest_salt=
 
 [table]
 table_user=user

@@ -11,7 +11,8 @@ from sqlalchemy.sql import and_, or_, not_
 
 def digest(word):
     m2 = hashlib.md5()
-    m2.update(word)
+    line = '%s%s' % (word, conf.digest_salt)
+    m2.update(line)
     token = m2.hexdigest()
     return token
 
@@ -331,30 +332,29 @@ def update_basic(nick_name=None, aim=None, age=None,\
     if ori_loc2:
         u[User.ori_loc2] = ori_loc2
         ctx['user']['ori_loc2'] = ori_loc2
-    h = {Hobby.pashan:'0',   Hobby.sheying:'0', Hobby.yinyue:'0',
-         Hobby.dianying:'0', Hobby.lvyou: '0',  Hobby.youxi: '0',
-         Hobby.jianshen:'0', Hobby.meishi: '0', Hobby.paobu: '0',
-         Hobby.guangjie:'0', Hobby.changge:'0', Hobby.tiaowu:'0',
-         Hobby.puke: '0',    Hobby.majiang:'0', Hobby.wanggou:'0',
-         Hobby.kanshu:'0' }
-    hc = Hobby(uid)
+    h = {Hobby.pashan:0,   Hobby.sheying:0, Hobby.yinyue:0,
+         Hobby.dianying:0, Hobby.lvyou: 0,  Hobby.youxi: 0,
+         Hobby.jianshen:0, Hobby.meishi: 0, Hobby.paobu: 0,
+         Hobby.guangjie:0, Hobby.changge:0, Hobby.tiaowu:0,
+         Hobby.puke: 0,    Hobby.majiang:0, Hobby.wanggou:0,
+         Hobby.kanshu:0 }
     hn = len(hobby)
-    hc.pashan   = hobby[0] if 0 < hn else 0
-    hc.sheying  = hobby[1] if 1 < hn else 0
-    hc.yinyue   = hobby[2] if 2 < hn else 0
-    hc.dianying = hobby[3] if 3 < hn else 0
-    hc.lvyou    = hobby[4] if 4 < hn else 0
-    hc.youxi    = hobby[5] if 5 < hn else 0
-    hc.jianshen = hobby[6] if 6 < hn else 0
-    hc.meishi   = hobby[7] if 7 < hn else 0
-    hc.paobu    = hobby[8] if 8 < hn else 0
-    hc.guangjie = hobby[9] if 9 < hn else 0
-    hc.changge  = hobby[10] if 10 < hn else 0
-    hc.tiaowu   = hobby[11] if 11 < hn else 0
-    hc.puke     = hobby[12] if 12 < hn else 0
-    hc.majiang  = hobby[13] if 13 < hn else 0
-    hc.wanggou  = hobby[14] if 14 < hn else 0
-    hc.kanshu   = hobby[15] if 15 < hn else 0
+    h[Hobby.pashan]   = hobby[0] if 0 < hn else 0
+    h[Hobby.sheying]  = hobby[1] if 1 < hn else 0
+    h[Hobby.yinyue]   = hobby[2] if 2 < hn else 0
+    h[Hobby.dianying] = hobby[3] if 3 < hn else 0
+    h[Hobby.lvyou]    = hobby[4] if 4 < hn else 0
+    h[Hobby.youxi]    = hobby[5] if 5 < hn else 0
+    h[Hobby.jianshen] = hobby[6] if 6 < hn else 0
+    h[Hobby.meishi]   = hobby[7] if 7 < hn else 0
+    h[Hobby.paobu]    = hobby[8] if 8 < hn else 0
+    h[Hobby.guangjie] = hobby[9] if 9 < hn else 0
+    h[Hobby.changge]  = hobby[10] if 10 < hn else 0
+    h[Hobby.tiaowu]   = hobby[11] if 11 < hn else 0
+    h[Hobby.puke]     = hobby[12] if 12 < hn else 0
+    h[Hobby.majiang]  = hobby[13] if 13 < hn else 0
+    h[Hobby.wanggou]  = hobby[14] if 14 < hn else 0
+    h[Hobby.kanshu]   = hobby[15] if 15 < hn else 0
     ctx['hobby'] = hc.dic_array()
     s = DBSession() 
 
@@ -368,7 +368,12 @@ def update_basic(nick_name=None, aim=None, age=None,\
     else:
         ctx['statement'] = {'id': uid, 'motto': motto, 'content':''}
     rh = s.query(Hobby).filter(Hobby.id == uid).update(h)
-    s.commit()
+    try:
+        s.commit()
+    except:
+        s.close()
+        return None
+    s.close()
     return ctx
 
 #按条件召回用户信息
@@ -557,12 +562,14 @@ def edit_statement(cnt, **ctx):
     if not uid:
         return None
     su = {Statement.content:cnt}
-    sc = Statement(uid, motto='', stat=cnt)
-    sc.content = cnt
 
     s = DBSession()
     s.query(Statement).filter(Statement.id == uid).update(su)
-    s.commit()
+    try:
+        s.commit()
+    except:
+        s.close()
+        return None
     ctx['statement']['content'] = cnt
     s.close()
     return ctx
@@ -594,7 +601,47 @@ def edit_other(salary=None, work=None, car=None, house=None, **ctx):
     s.commit()
     s.close()
     return ctx
-
+'''
+num:  微信号或qq号或email
+kind: =1验证微信 =2验证qq =3验证email
+ctx:  用户的上下文, 包括uid
+return: 成功=ctx  失败=None
+'''
+def verify_wx_qq_email(num, kind, **ctx):
+    if not num or not kind or not ctx:
+        return None
+    uid = None
+    try:
+        uid = ctx['user']['id']
+    except:
+        uid = None
+    if not uid:
+        return None
+    D = {}
+    try:
+        if kind == 1:
+            D = {OtherInfo.wx: num, OtherInfo.verify_w:1}
+            ctx['otherinfo']['wx'] = num
+            ctx['otherinfo']['verify_w'] = 1
+        elif kind == 2:
+            D = {OtherInfo.qq: num, OtherInfo.verify_q:1}
+            ctx['otherinfo']['qq'] = num
+            ctx['otherinfo']['verify_q'] = 1
+        else:
+            D = {OtherInfo.email: num, OtherInfo.verify_e:1}
+            ctx['otherinfo']['email'] = num
+            ctx['otherinfo']['verify_e'] = 1
+    except:
+        return None
+    s = DBSession()
+    s.query(OtherInfo).filter(OtherInfo.id == uid).update(D)
+    try:
+        s.commit()
+    except:
+        s.close()
+        return None
+    s.close()
+    return ctx
 #充值
 def recharge(uid, num, s=None):
     if not uid or not num or num < 0:
@@ -717,6 +764,7 @@ def publish_conn(kind, action, **ctx):
 __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'user_regist', 'query_user', 'query_user_login', 'get_user_info',
          'update_basic','get_ctx_info', 'edit_statement', 'edit_other',
+         'verify_wx_qq_email',
          'publish_conn','query_new', 'find_users']
 
 if __name__ == '__main__':

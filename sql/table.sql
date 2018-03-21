@@ -22,7 +22,9 @@ create table if not exists user
     ori_loc1  varchar(8) default '', /*籍贯所在省(直辖市)*/
     ori_loc2  varchar(8) default '', /*籍贯所在市(区)*/
     state tinyint default 0, /*征友状态 0=征友进行中 1=找到意中人*/
-    regist_time timestamp default CURRENT_TIMESTAMP not null
+    regist_time timestamp default CURRENT_TIMESTAMP not null,
+    valid_state tinyint not null default 0, /*状态 0=合法 1=被禁止*/
+    msg varchar(32) default '' /*被禁止的原因*/
 ) engine=InnoDB, charset=utf8;
 
 /*座右铭和内心独白表*/
@@ -99,20 +101,31 @@ create table if not exists hobby
 /*发送email*/
 create table if not exists email
 (
-    id int unsigned primary key,
+    id int unsigned primary key auto_increment,
     from_id int unsigned not null,
     to_id   int unsigned not null,
-    content varchar(96),
+    content varchar(256),
     time_ timestamp default CURRENT_TIMESTAMP
 ) engine=InnoDB, charset=utf8;
 
-/*用户充值记录*/
-create table if not exists money_record
+/*用户消费记录*/
+create table if not exists consume_record
 (
-    id int unsigned primary key,
+    id int unsigned primary key auto_increment,
     userid int unsigned not null,
-    objid  int unsigned not null, /*userid 帖子id 或邮件id*/
-    way tinyint unsigned not null,/*0=充值 1=发送眼缘 2=发信 3=约会帖 4=征婚帖 5=从其他账号余额转过来*/
+    objid  int unsigned not null, /*userid 帖子id 或邮件id or user id*/
+    way tinyint unsigned not null,/*1=发送眼缘 2=发信 3=约会帖 4=征婚帖 
+                                    5=查看手机 6=查看微信 7=查看QQ 8=查看邮件*/
+    num int unsigned not null, /*发生个数 1个=0.1元*/
+    time_ timestamp default CURRENT_TIMESTAMP
+) engine=InnoDB, charset=utf8;
+
+/*充值记录*/
+create table if not exists add_record
+(
+    id int unsigned primary key auto_increment,
+    userid int unsigned not null,  /*用户id*/
+    way tinyint unsigned not null, /*0=微信支付 1=支付宝*/
     num int unsigned not null, /*发生个数 1个=0.1元*/
     time_ timestamp default CURRENT_TIMESTAMP
 ) engine=InnoDB, charset=utf8;
@@ -120,17 +133,57 @@ create table if not exists money_record
 /*用户的账户余额*/
 create table if not exists user_account
 (
-    id int unsigned primary key,
-    num    int unsigned not null /*余额总计*/
+    id int unsigned primary key, /*用户id*/
+    num    int unsigned not null,/*余额总计 单位个 1个=0.1元*/
+    free   int unsigned default 0 /*每日免费个数 单位个  1个=0.1元*/
 ) engine=InnoDB, charset=utf8;
 
 /*我看过谁 谁看过我*/
 create table if not exists look
 (
-    id int unsigned primary key,
-    from_id int unsigned not null,
-    to_id   int unsigned not null,
-    time timestamp default CURRENT_TIMESTAMP
+    id int unsigned primary key auto_increment,
+    from_id int unsigned not null,  /*主动看的用户id*/
+    to_id   int unsigned not null,  /*被动看的用户id*/
+    time_ timestamp default CURRENT_TIMESTAMP
 ) engine=InnoDB, charset=utf8;
 
+/*我关注的*/
+create table if not exists care
+(
+    id int unsigned primary key auto_increment,
+    from_id int unsigned not null,  /*主动看的用户id*/
+    to_id   int unsigned not null,  /*被动看的用户id*/
+    time_ timestamp default CURRENT_TIMESTAMP
+) engine=InnoDB, charset=utf8;
 
+/*约会帖子*/
+create table if not exists dating
+(
+    id int unsigned primary key auto_increment,
+    userid  int unsigned not null,  /*发起人id*/
+    age  tinyint unsigned not null, /*发起人年龄*/
+    sex  tinyint unsigned not null, /*发起人性别 0=女 1=男*/
+    subject tinyint unsigned not null, /* 0=约饭 1=电影 2=交友 3=聊天
+                                      4=喝酒 5=唱歌 6=其他*/
+    dtime timestamp not null,      /*约会时间*/
+    loc1  varchar(8) not null,     /*约会地点 省(直辖市)*/
+    loc2  varchar(8) not null,     /*约会地点 市(区) */
+    loc_detail varchar(64),        /*约会详细地点*/
+    object tinyint unsigned not null, /*0=男士 1=女士 2=男女均可*/
+    numbers int unsigned not null, /*约会人数*/
+    fee tinyint unsigned not null, /*0=发起人付 1=AA 2=男士付款,女士免单 3=视情况而定*/
+    buchong varchar(64),  /*约会补充*/
+    valid_time tinyint unsigned not null, /*报名有效期限 单位天*/
+    time_ timestamp default CURRENT_TIMESTAMP,
+    valid_state tinyint not null default 0, /*0=帖子有效 1=被禁止*/
+    msg varchar(32) /*被禁止的原因*/
+) engine=InnoDB, charset=utf8;
+
+/*约会报名表*/
+create table if not exists yh_baoming
+(
+    id int unsigned primary key auto_increment,
+    userid  int unsigned not null,  /*发起人id*/
+    userid1 int unsigned not null,  /*报名人id*/
+    time_ timestamp default CURRENT_TIMESTAMP
+) engine=InnoDB, charset=utf8;

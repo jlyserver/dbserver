@@ -267,6 +267,7 @@ class BasicEditHandler(tornado.web.RequestHandler):
             r = update_basic(nick_name, aim, age, marriage, xingzuo,\
                        shengxiao, blood, weight, height, degree, nation, \
                   cur_loc1, cur_loc2, ori_loc1, ori_loc2, motto, *hobby, **ctx)
+            print('cur_loc1=%s cur_loc2=%s ori_loc1=%s ori_loc2=%s', (cur_loc1, cur_loc2, ori_loc1, ori_loc2))
             if not r:
                 r = {'code': -1, 'msg': '编辑失败'}
             else:

@@ -53,7 +53,8 @@ def user_regist(mobile, passwd, sex, s=None):
     if not f:
         s = DBSession()
     tok = digest(passwd)
-    u = User(mobile=mobile, password=tok, sex=sex)
+    name = u'新用户%s' % mobile[-4:]
+    u = User(mobile=mobile, name=name, password=tok, sex=sex)
     r = s.query(User).filter(User.mobile == mobile).first()
     if r:
         if not f:
@@ -72,7 +73,7 @@ def user_regist(mobile, passwd, sex, s=None):
     r = s.query(User).filter(User.mobile == mobile).first()
     uid = r.id
     h  = Hobby(uid)
-    st = Statement(uid)
+    st = Statement(uid, motto='未填', stat='未填')
     o  = OtherInfo(uid, mobile=mobile, verify_m=1)
     p  = Picture(uid)
     a  = User_account(id_=uid)
@@ -92,7 +93,7 @@ def user_regist(mobile, passwd, sex, s=None):
         rb.query(Statement).filter(Statement.id == uid).delete(synchronize_session=False)
         rb.query(OtherInfo).filter(OtherInfo.id == uid).delete(synchronize_session=False)
         rb.query(Picture).filter(Picture.id == uid).delete(synchronize_session=False)
-        rb.query(User_account).filter(User_account.userid == uid).delete(synchronize_session=False)
+        rb.query(User_account).filter(User_account.id == uid).delete(synchronize_session=False)
         try:
             rb.commit()
         except:
@@ -130,6 +131,11 @@ def query_statement_by_uid(uid, s=None):
     try:
         r = s.query(Statement).filter(Statement.id == uid).first()
         r = {} if not r else r.dic_return()
+        if not r:
+            stm = Statement(id_=uid, motto='未填', stat='未填')
+            s.add(stm)
+            s.commit()
+            r = stm.dic_return()
     except:
         r = {}
     if not t:
@@ -146,6 +152,14 @@ def query_otherinfo_by_uid(uid, s=None):
     try:
         r = s.query(OtherInfo).filter(OtherInfo.id == uid).first()
         r = {} if not r else r.dic_return()
+        if not r:
+            ru = s.query(User).filter(User.id == uid).first()
+            if ru:
+                oi = OtherInfo(id_=uid, mobile=ru.mobile, verify_m=1)
+            else:
+                oi = OtherInfo(id_=uid)
+            s.add(oi)
+            r = oi.dic_return()
     except:
         r = {}
     if not t:
@@ -162,6 +176,11 @@ def query_pic_by_uid(uid, s=None):
     try:
         r = s.query(Picture).filter(Picture.id == uid).first()
         r = {} if not r else r.dic_array()
+        if not r:
+            pt = Picture(id_=uid)
+            s.add(pt)
+            s.commit()
+            r = pt.dic_return()
     except:
         r = {}
     if not t:
@@ -170,35 +189,40 @@ def query_pic_by_uid(uid, s=None):
 
 #根据用户uid查询兴趣爱好
 def query_hobby_by_uid(uid, s=None):
-    h = Hobby(0)
-    null = h.dic_array()
     if not uid:
-        return null
+        return {}
     t = s
     if not t:
         s = DBSession()
-    r = null
     try:
         r = s.query(Hobby).filter(Hobby.id == uid).first()
-        r = null if not r else r.dic_array()
+        r = {} if not r else r.dic_array()
+        if not r:
+            hob = Hobby(id_=uid)
+            s.add(hob)
+            s.commit()
+            r = hob.dic_array()
     except:
-        r = null
+        r = {}
     if not t:
         s.close()
     return r
 def query_account_by_uid(uid, s=None):
-    a = User_account()
-    null = a.dic_return()
     if not uid:
-        return null
+        return {}
     t = s
     if not t:
         s = DBSession()
     try:
         r = s.query(User_account).filter(User_account.id == uid).first()
-        r = null if not r else r.dic_return()
+        r = {} if not r else r.dic_return()
+        if not r:
+            ao = User_account(id_=uid)
+            s.add(ao)
+            s.commit()
+            r = ao.dic_return()
     except:
-        r = null
+        r = {}
     if not t:
         s.close()
     return r
@@ -289,13 +313,13 @@ def update_basic(nick_name=None, aim=None, age=None,\
         ctx['user']['nick_name'] = nick_name
     if aim:
         u[User.aim] = int(aim)
-        ctx['user']['aim'] = arr[i]
+        ctx['user']['aim'] = int(aim)
     if age:
         u[User.age] = int(age)
         ctx['user']['age'] = int(age)
     if marriage:
         u[User.marriage] = int(marriage)
-        ctx['user']['marriage'] = arr[i]
+        ctx['user']['marriage'] = int(marriage)
     if xingzuo:
         u[User.xingzuo] = int(xingzuo)
         ctx['user']['xingzuo'] = int(xingzuo)
@@ -355,9 +379,8 @@ def update_basic(nick_name=None, aim=None, age=None,\
     h[Hobby.majiang]  = hobby[13] if 13 < hn else 0
     h[Hobby.wanggou]  = hobby[14] if 14 < hn else 0
     h[Hobby.kanshu]   = hobby[15] if 15 < hn else 0
-    ctx['hobby'] = hc.dic_array()
-    s = DBSession() 
 
+    s = DBSession() 
     if u:
         ru = s.query(User).filter(User.id == uid).update(u)
     motto = '' if not motto else motto
@@ -373,6 +396,8 @@ def update_basic(nick_name=None, aim=None, age=None,\
     except:
         s.close()
         return None
+    r = s.query(Hobby).filter(Hobby.id == uid).first()
+    ctx['hobby'] = r.dic_array() if r else {}
     s.close()
     return ctx
 
@@ -768,5 +793,10 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'publish_conn','query_new', 'find_users']
 
 if __name__ == '__main__':
-    r = user_regist('17313615918', '123', 1)
-    print(r)
+#   r = user_regist('17313615918', '123', 1)
+#   print(r)
+    s = DBSession()
+    a = User_account(19)
+    s.add(a)
+    s.commit()
+    s.close()

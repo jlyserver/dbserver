@@ -27,7 +27,8 @@ class User(Base):
     def __init__(self, id_=0, name='', password='', mobile='',
             sex=0, aim=0, age=18,\
             m=0, xz=0, sx=0, blood=0, salary=0, wt=50, ht=160, de=0, \
-            na=1, cl1='', cl2='', ori1='', ori2='', st=0, t=None):
+            na=1, cl1='', cl2='', ori1='', ori2='', st=0,
+            t=None, v_st=0, msg=''):
         self.id       = id_
         self.nick_name= name
         self.password = password
@@ -55,6 +56,8 @@ class User(Base):
             self.regist_time = now
         else:
             self.regist_time = t
+        self.valid_state = v_st
+        self.msg         = msg
 
     id                = Column(Integer, primary_key=True)
     nick_name         = Column(String(16))
@@ -78,6 +81,8 @@ class User(Base):
     ori_loc2          = Column(String(8))
     state             = Column(Integer)
     regist_time       = Column(TIMESTAMP)
+    valid_state       = Column(Integer)
+    msg               = Column(String(32))
 
     def dic_return(self):
         return { 'id':       self.id,          'nick_name': self.nick_name, 
@@ -91,12 +96,14 @@ class User(Base):
                  'degree':   self.degree,      'nation':    self.nation,
                  'curr_loc1':self.curr_loc1,   'curr_loc2': self.curr_loc2, 
                  'ori_loc1': self.ori_loc1,    'ori_loc2':  self.ori_loc2,
-                 'state':    self.state,
-                 'regist_time': str(self.regist_time)}
+                 'state':    self.state,       'msg': self.msg,
+                 'regist_time': str(self.regist_time),
+                 'valid_state': self.valid_state}
     def dic_return2(self):
         return { 'id':       self.id,          'nick_name': self.nick_name,
                  'sex':      self.sex,         'age':       self.age,
-                 'height':   self.height,      'degree':    self.degree}
+                 'height':   self.height,      'degree':    self.degree,
+                 'valid_state': self.valid_state, 'msg': self.msg}
 
 ###########################################
 class Statement(Base):
@@ -118,9 +125,9 @@ class Statement(Base):
 class OtherInfo(Base):
     __tablename__ = conf.table_otherinfo
     def __init__(self, id_, salary=0, work=0, house=0, car=0,\
-                mobile='', verify_m=0, public_m=1, email='', \
-                verify_e=0, public_e=1, wx='', verify_w=0, \
-                public_w=1, qq='', verify_q=0, public_q=1):
+                mobile='未填', verify_m=0, public_m=1, email='未填', \
+                verify_e=0, public_e=1, wx='未填', verify_w=0, \
+                public_w=1, qq='未填', verify_q=0, public_q=1):
         self.id          = id_
         self.salary      = salary
         self.work        = work
@@ -201,11 +208,11 @@ class Picture(Base):
     url8         = Column(String(64))
     url9         = Column(String(64))
     def dic_return(self):
-        return {'id':   self.id,     'count': self.count, \
-                'url0': self.url0,   'url1':  self.url1,  \
-                'url2': self.url0,   'url3':  self.url1,  \
-                'url4': self.url0,   'url5':  self.url1,  \
-                'url6': self.url0,   'url7':  self.url1,  \
+        return {'id':   self.id,     'count': self.count,
+                'url0': self.url0,   'url1':  self.url1,
+                'url2': self.url0,   'url3':  self.url1,
+                'url4': self.url0,   'url5':  self.url1,
+                'url6': self.url0,   'url7':  self.url1,
                 'url8': self.url0,   'url9':  self.url1}
     def dic_array(self):
         a = [self.url0, self.url1, self.url2, self.url3, self.url4,\
@@ -314,7 +321,7 @@ class Email(Base):
     id           = Column(Integer, primary_key=True)
     from_id      = Column(Integer)
     to_id        = Column(Integer)
-    content      = Column(String(96))
+    content      = Column(String(256))
     time_        = Column(TIMESTAMP)
     def dic_return(self):
         return {'id': self.id,        'from_id': self.from_id,
@@ -322,8 +329,8 @@ class Email(Base):
                 'time': self.time_}
 ###########################################
 
-class Money_record(Base):
-    __tablename__ = conf.table_money_record
+class Consume_record(Base):
+    __tablename__ = conf.table_consume_record
     def __init__(self, id_=0, uid=0, oid=0, way=0, num=0, t=None):
         if not t:
             t    = time.localtime()
@@ -348,15 +355,38 @@ class Money_record(Base):
                 'num':     self.num, 'time': self.time_}
 ##########################################################
 
+class Add_record(Base):
+    __tablename__ = conf.table_add_record
+    def __init__(self, id_=0, uid=0, way=0, num=0, t=None):
+        if not t:
+            t    = time.localtime()
+            now  = time.strftime('%Y-%m-%d %H:%M:%S', t)
+            self.time_ = now
+        else:
+            self.time_ = t
+        self.id      = id_
+        self.userid  = uid
+        self.way     = way
+        self.num     = num
+    id           = Column(Integer, primary_key=True)
+    userid       = Column(Integer)
+    way          = Column(Integer)
+    num          = Column(Integer)
+    time_        = Column(TIMESTAMP)
+##########################################################
+
 class User_account(Base):
     __tablename__ = conf.table_user_account
-    def __init__(self, id_=0, num=0):
+    def __init__(self, id_=0, num=0, f=0):
         self.id     = id_
         self.num    = num
+        self.free   = f
     id           = Column(Integer, primary_key=True)
     num          = Column(Integer)
+    free         = Column(Integer)
     def dic_return(self):
-        return {'id': self.id,   'num': self.num}
+        return {'id': self.id,   'num': self.num, 'free': self.free}
+
 ###########################################################
 
 class Look(Base):
@@ -379,9 +409,30 @@ class Look(Base):
         return {'id': self.id,  'from_id':self.from_id,
                 'to_id': self.to_id, 'time': self.time_}
 
+#################################################################
 
+class Care(Base):
+    __tablename__ = conf.table_care
+    def __init__(self, id_=0, f=0, to=0, t=None):
+        self.id       = id_
+        self.from_id  = f
+        self.to_id    = to
+        if not t:
+            t    = time.localtime()
+            now  = time.strftime('%Y-%m-%d %H:%M:%S', t)
+            self.time_ = now
+        else:
+            self.time_ = t
+
+    id           = Column(Integer, primary_key=True)
+    from_id      = Column(Integer)
+    to_id        = Column(Integer)
+    time_        = Column(TIMESTAMP)
+
+#################################################################
 __all__=['DBSession', 'User', 'Statement', 'OtherInfo', 'Picture', 'Hobby',
-         'Email', 'Money_record', 'User_account', 'Look']
+         'Email', 'Consume_record', 'Add_record', 'User_account', 'Look',
+         'Care']
 '''
 '''
 if __name__ == '__main__':

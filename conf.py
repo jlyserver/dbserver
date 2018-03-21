@@ -34,9 +34,11 @@ class Picconf():
         self.table_picture   = p.get('table', 'table_picture')
         self.table_hobby     = p.get('table', 'table_hobby')
         self.table_email     = p.get('table', 'table_email')
-        self.table_money_record = p.get('table', 'table_money_record')
+        self.table_consume_record = p.get('table', 'table_consume_record')
+        self.table_add_record     = p.get('table', 'table_add_record')
         self.table_user_account = p.get('table', 'table_user_account')
         self.table_look         = p.get('table', 'table_look')
+        self.table_care         = p.get('table', 'table_care')
     def dis(self):
         print(self.port)
 

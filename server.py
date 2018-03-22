@@ -240,12 +240,13 @@ class BasicEditHandler(tornado.web.RequestHandler):
         height       = self.get_argument('height',    None)
         degree       = self.get_argument('degree',    None)
         nation       = self.get_argument('nation',    None)
-        cur_loc1     = self.get_argument('cur_loc1',  None)
-        cur_loc2     = self.get_argument('cur_loc2',  None)
+        cur_loc1     = self.get_argument('curr_loc1',  None)
+        cur_loc2     = self.get_argument('curr_loc2',  None)
         ori_loc1     = self.get_argument('ori_loc1',  None)
         ori_loc2     = self.get_argument('ori_loc2',  None)
         motto        = self.get_argument('motto',     None)
-        hobby        = self.get_argument('hobby',     []) 
+        hobby        = self.get_argument('hobby',     '') 
+        print('hobby=%s' % hobby)
         if hobby:
             h = []
             try:

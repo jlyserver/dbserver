@@ -151,8 +151,8 @@ create table if not exists look
 create table if not exists care
 (
     id int unsigned primary key auto_increment,
-    from_id int unsigned not null,  /*主动看的用户id*/
-    to_id   int unsigned not null,  /*被动看的用户id*/
+    from_id int unsigned not null,  /*主动关注的用户id*/
+    to_id   int unsigned not null,  /*被动关注的用户id*/
     time_ timestamp default CURRENT_TIMESTAMP
 ) engine=InnoDB, charset=utf8;
 
@@ -172,7 +172,7 @@ create table if not exists dating
     object tinyint unsigned not null, /*0=男士 1=女士 2=男女均可*/
     numbers int unsigned not null, /*约会人数*/
     fee tinyint unsigned not null, /*0=发起人付 1=AA 2=男士付款,女士免单 3=视情况而定*/
-    buchong varchar(64),  /*约会补充*/
+    buchong varchar(160),  /*约会补充*/
     valid_time tinyint unsigned not null, /*报名有效期限 单位天*/
     time_ timestamp default CURRENT_TIMESTAMP,
     valid_state tinyint not null default 0, /*0=帖子有效 1=被禁止*/

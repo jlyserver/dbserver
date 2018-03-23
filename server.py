@@ -360,13 +360,13 @@ class VerifyOtherHandler(tornado.web.RequestHandler):
                     d = {'code': -1, 'msg': '验证失败'}
         d = json.dumps(d)
         self.write(d)
-class PublishHandler(tornado.web.RequestHandler):
+class PublicHandler(tornado.web.RequestHandler):
     def post(self):
         ctx       = self.get_argument('ctx', None)
         kind      = self.get_argument('kind', None)
         action    = self.get_argument('action', None)
         if not ctx or not kind or not action:
-            r = {'code': -1, 'msg':'invalid', 'data': {}}
+            r = {'code': -1, 'msg':'参数不正确'}
             r = json.dumps(r)
             self.write(r)
         else:
@@ -376,11 +376,12 @@ class PublishHandler(tornado.web.RequestHandler):
             except:
                 d = {}
             if not d:
-                r = {'code': -1, 'msg':'invalid', 'data': {}}
+                r = {'code': -2, 'msg':'请先登录'}
                 r = json.dumps(r)
                 self.write(r)
             else:
-                r = publish_conn(kind, action, **d)
+                kind, action = int(kind), int(action)
+                r = public_conn(kind, action, **d)
                 if not r:
                     r = {'code': -1, 'msg': '编辑失败'}
                 else:
@@ -388,6 +389,21 @@ class PublishHandler(tornado.web.RequestHandler):
                 r = json.dumps(r)
                 self.write(r)
 
+class ISeeHandler(tornado.web.RequestHandler):
+    def post(self):
+        uid = self.get_argument('uid', None)
+        if not uid:
+            d = {'code': -1, 'msg':'参数不正确'}
+            d = json.dumps(d)
+            self.write(d)
+        else:
+            n, r = isee(uid)
+            if not r:
+                d = {'code': -2, 'msg': '请先登录'}
+            else:
+                d = {'code': 0, 'msg':'ok', 'data': {'count':n, 'data':r}}
+            d = json.dumps(d)
+            self.write(d)
 
 if __name__ == "__main__":
     tornado.options.parse_command_line()
@@ -409,7 +425,8 @@ if __name__ == "__main__":
         ('/statement_edit', StatementEditHandler),
         ('/other_edit', OtherEditHandler),
         ('/verify_other', VerifyOtherHandler),
-       #('/publish', PublishHandler),
+        ('/public', PublicHandler),
+        ('/isee', ISeeHandler),
         ('/new', IndexNewHandler),
         ('/find', FindHandler),
               ]

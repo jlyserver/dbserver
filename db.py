@@ -786,19 +786,32 @@ def public_conn(kind, action, **ctx):
     return ctx
 
 '''
-谁看过我, 超过toffset_isee_limit的人数的取最近toffset_isee_limit个人
-uid: 主动看的人的id
+kind: =1我看过谁 =2谁看过我  
 '''
-def isee(uid, s=None):
+def see(uid, kind, s=None):
     if not uid:
         return None, None
     f = s
+    limit = 0
     if not f:
         s = DBSession()
-    r = s.query(Look).filter(Look.from_id == uid).order_by(desc(Look.time_))
+    if kind == 1:
+        limit = conf.toffset_isee_limit
+        r = s.query(Look).filter(Look.from_id == uid).order_by(desc(Look.time_))
+    elif kind == 2:
+        limit = conf.toffset_seeme_limit
+        r = s.query(Look).filter(Look.to_id == uid).order_by(desc(Look.time_))
+    else:
+        if not f:
+            s.close()
+        return None, None
+    if not r:
+        if not f:
+            s.close()
+        return 0, [] 
     a1, a2, n = [], [], 0
     for e in r:
-        if n > conf.toffset_isee_limit:
+        if n > limit:
             a2.append(e.id)
         else:
             a1.append(e)
@@ -808,6 +821,10 @@ def isee(uid, s=None):
         s.commit()
     m_a1_t = {}
     ids = [e.to_id for e in a1]
+    if not ids:
+        if not f:
+            s.close()
+        return 0, [] 
     r = s.query(User).filter(User.id.in_(ids)).all()
     m_u = {}
     for e in r:
@@ -816,12 +833,13 @@ def isee(uid, s=None):
     m_p = {}
     for e in r:
         m_p[e.id] = e.url0
-
+    N = len(a1)
     for e in a1:
         [t1, t2] = str(e.time_).split(' ')
         u = m_u.get(e.to_id)
         p = m_p.get(e.to_id, '')
         if not u:
+            N = N - 1
             continue
         d = {'id':e.to_id, 'nick_name':u['nick_name'], 'sex':u['sex'],
              'age': u['age'], 'curr_loc1':u['curr_loc1'],
@@ -834,29 +852,93 @@ def isee(uid, s=None):
     D = [{'date': e, 'arr':m_a1_t[e]} for e in a]
     if not f:
         s.close()
+    N = N if N > 0 else 0
     return len(a1), D
 
+'''
+谁看过我, 超过toffset_isee_limit的人数的取最近toffset_isee_limit个人
+uid: 主动看的人的id
+'''
+def isee(uid, s=None):
+    n, r = see(uid, 1, s)
+    return n, r
+
+'''
+谁看过我, 超过toffset_seeme_limit的人数的取最近toffset_seeme_limit个人
+uid: 被动看的人的id
+'''
+def seeme(uid, s=None):
+    n, r = see(uid, 2, s)
+    return n, r
+
+def icare(uid, s=None):
+    if not uid:
+        return None, None
+    limit = conf.toffset_icare_limit
+    f = s
+    if not f:
+        s = DBSession()
+    r = s.query(Care).filter(Care.from_id == uid).order_by(desc(Care.time_))
+    if not r:
+        if not f:
+            s.close()
+        return 0, []
+
+    a1, a2, n = [], [], 0
+    for e in r:
+        if n > limit:
+            a2.append(e.id)
+        else:
+            a1.append(e)
+        n = n + 1
+    if a2:
+        s.query(Care).filter(Care.id.in_(a2)).delete(synchronize_session=False)
+        s.commit()
+    m_a1_t = {}
+    ids = [e.to_id for e in a1]
+    if not ids:
+        if not f:
+            s.close()
+        return 0, []
+    r = s.query(User).filter(User.id.in_(ids)).all()
+    m_u = {}
+    for e in r:
+        m_u[e.id] = e.dic_return()
+    r = s.query(Picture).filter(Picture.id.in_(ids)).all()
+    m_p = {}
+    for e in r:
+        m_p[e.id] = e.url0
+    N = len(a1)
+    for e in a1:
+        [t1, t2] = str(e.time_).split(' ')
+        u = m_u.get(e.to_id)
+        p = m_p.get(e.to_id, '')
+        if not u:
+            N = N - 1
+            continue
+        d = {'id':e.to_id, 'nick_name':u['nick_name'], 'sex':u['sex'],
+             'age': u['age'], 'curr_loc1':u['curr_loc1'],
+             'curr_loc2':u['curr_loc2'], 'src': p, 'time':t2}
+        if not m_a1_t.get(t1):
+            m_a1_t[t1] = [d]
+        else:
+            m_a1_t[t1].append(d)
+    a = sorted(m_a1_t.keys(), reverse=True)
+    D = [{'date': e, 'arr':m_a1_t[e]} for e in a]
+    if not f:
+        s.close()
+    N = N if N > 0 else 0
+    return N, D
 
 __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'user_regist', 'query_user', 'query_user_login', 'get_user_info',
          'update_basic','get_ctx_info', 'edit_statement', 'edit_other',
-         'verify_wx_qq_email',
+         'verify_wx_qq_email', 'isee', 'seeme', 'icare',
          'public_conn','query_new', 'find_users']
 
-def init():
-    s = DBSession()
-    for i in xrange(5):
-        t = '2018-03-0%d 1%d:15:0%d' % (i+1, i, i)
-        l = Look(0, 1, i+20, t)
-        s.add(l)
-    for i in xrange(5):
-        t = '2018-02-0%d 1%d:15:0%d' % (i+1, i, i)
-        l = Look(0, 1, i+40, t)
-        s.add(l)
-    s.commit()
-    s.close()
+
 if __name__ == '__main__':
-    r = isee(1,  **{'user':{'id':1}})
+    r = seeme(14)
     print(r)
 '''
     r = user_regist('17313615918', '123', 1)

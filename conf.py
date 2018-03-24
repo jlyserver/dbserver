@@ -27,6 +27,7 @@ class Picconf():
         self.toffset_new_female = p.getint('toffset', 'new_female')
         self.toffset_isee_limit = p.getint('toffset', 'isee_limit')
         self.toffset_seeme_limit= p.getint('toffset', 'seeme_limit')
+        self.toffset_icare_limit= p.getint('toffset', 'icare_limit')
 
         self.digest_salt     = p.get('digest', 'digest_salt')
 

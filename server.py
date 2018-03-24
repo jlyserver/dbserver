@@ -397,6 +397,7 @@ class ISeeHandler(tornado.web.RequestHandler):
             d = json.dumps(d)
             self.write(d)
         else:
+            uid = int(uid)
             n, r = isee(uid)
             if not r:
                 d = {'code': -2, 'msg': '请先登录'}
@@ -404,6 +405,41 @@ class ISeeHandler(tornado.web.RequestHandler):
                 d = {'code': 0, 'msg':'ok', 'data': {'count':n, 'data':r}}
             d = json.dumps(d)
             self.write(d)
+
+class SeeMeHandler(tornado.web.RequestHandler):
+    def post(self):
+        uid = self.get_argument('uid', None)
+        if not uid:
+            d = {'code': -1, 'msg':'参数不正确'}
+            d = json.dumps(d)
+            self.write(d)
+        else:
+            uid = int(uid)
+            n, r = seeme(uid)
+            if not r:
+                d = {'code': -2, 'msg': '请先登录'}
+            else:
+                d = {'code': 0, 'msg':'ok', 'data': {'count':n, 'data':r}}
+            d = json.dumps(d)
+            self.write(d)
+
+class ICareHandler(tornado.web.RequestHandler):
+    def post(self):
+        uid = self.get_argument('uid', None)
+        if not uid:
+            d = {'code': -1, 'msg':'参数不正确'}
+            d = json.dumps(d)
+            self.write(d)
+        else:
+            uid = int(uid)
+            n, r = icare(uid)
+            if not r:
+                d = {'code': -2, 'msg': '请先登录'}
+            else:
+                d = {'code': 0, 'msg':'ok', 'data': {'count':n, 'data':r}}
+            d = json.dumps(d)
+            self.write(d)
+
 
 if __name__ == "__main__":
     tornado.options.parse_command_line()
@@ -427,6 +463,8 @@ if __name__ == "__main__":
         ('/verify_other', VerifyOtherHandler),
         ('/public', PublicHandler),
         ('/isee', ISeeHandler),
+        ('/seeme', SeeMeHandler),
+        ('/icare', ICareHandler),
         ('/new', IndexNewHandler),
         ('/find', FindHandler),
               ]

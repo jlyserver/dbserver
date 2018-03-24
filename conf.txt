@@ -28,7 +28,7 @@ new_male=4
 new_female=4
 isee_limit=50
 seeme_limit=50
-
+icare_limit=100
 
 [digest]
 digest_salt=

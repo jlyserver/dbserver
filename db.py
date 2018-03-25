@@ -753,7 +753,7 @@ def get_email_by_uid(uid, limit, page, next_, t=0, s=None):
     return [] if not r else [e.dic_return() for e in r]
 
 def public_conn(kind, action, **ctx):
-    if not kind or not action or not ctx:
+    if not ctx:
         return None
     #手机 qq wx email
     if kind not in [1, 2, 3, 4] or action not in [0, 1]:
@@ -762,19 +762,27 @@ def public_conn(kind, action, **ctx):
     if not uid:
         return None
     ou  = {}
-    s = DBSession()
     if kind == 1:
         ctx['otherinfo']['public_m'] = action
         ou[OtherInfo.public_m] = action
+        if ctx['otherinfo']['verify_m'] == 0:
+            return None
     elif kind == 2:
         ctx['otherinfo']['public_w'] = action
         ou[OtherInfo.public_w] = action
+        if ctx['otherinfo']['verify_w'] == 0:
+            return None
     elif kind == 3:
         ctx['otherinfo']['public_q'] = action
         ou[OtherInfo.public_q] = action
+        if ctx['otherinfo']['verify_q'] == 0:
+            return None
     elif kind == 4:
         ctx['otherinfo']['public_e'] = action
         ou[OtherInfo.public_e] = action
+        if ctx['otherinfo']['verify_e'] == 0:
+            return None
+    s = DBSession()
     if ou:
         try:
             s.query(OtherInfo).filter(OtherInfo.id == uid).update(ou)
@@ -930,15 +938,180 @@ def icare(uid, s=None):
     N = N if N > 0 else 0
     return N, D
 
+def list_dating(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=None, limit=None, next_=None, s=None):
+    page = conf.toffset_dating_page if not page else int(page)
+    limit = conf.toffset_dating_limit if not limit else int(limit)
+    next_ = 0 if not next_ else int(next_)
+    c = True
+    if sex and sex in ['0', '1']:
+        c = and_(c, Dating.sex == sex)
+    if age1 and age1.isdigit():
+        age1 = int(age1)
+    if age2 and age2.isdigit():
+        age2 = int(age2)
+    if age1:
+        if age2:
+            if age1 > age2:
+                c = and_(c, Dating.age >= age2, Dating.age <=age1)
+            else:
+                c = and_(c, Dating.age >= age1, Dating.age <=age2)
+        else:
+            c = and_(c, Dating.age >= age1)
+    else:
+        if age2:
+            c = and_(c, Dating.age <= age2)
+    if loc1:
+        c = and_(c, Dating.loc1 == loc1)
+    if loc2:
+        c = and_(c, Dating.loc2 == loc2)
+   
+    f = s
+    if not f:
+        s = DBSession()
+    n = s.query(Dating).filter(c).count()
+    r = s.query(Dating).filter(c).limit(limit).offset(page*next_)
+    ids = [e.id for e in r]
+    ru = []
+    if ids:
+        ru = s.query(Picture).filter(Picture.id.in_(ids)).all()
+    p_m = {}
+    for e in ru:
+        p_m[e.id] = e.url0
+    a = []
+    for e in r:
+        t = e.dic_return()
+        df = 'img/default_female.jpg' if e.sex == 0 else 'img/default_male.jpg'
+        t['src'] = p_m.get(e.id, df)
+        a.append(t)
+    if not f:
+        s.close()
+    return n, a
+
+'''
+我发起的约会
+return:  结果个数, 结果列表
+'''
+def sponsor_dating(uid=None, page=None, limit=None, next_=None,  s=None):
+    if not uid or not uid.isdigit():
+        return 0, None
+    page = conf.toffset_dating_page if not page else int(page)
+    limit = conf.toffset_dating_limit if not limit else int(limit)
+    next_ = 0 if not next_ else int(next_)
+   
+    f = s
+    if not f:
+        s = DBSession()
+    n = s.query(Dating).filter(Dating.userid == uid).count()
+    r = s.query(Dating).filter(Dating.userid == uid).limit(limit).offset(page*next_)
+    ids = [e.id for e in r]
+    ru = []
+    if ids:
+        ru = s.query(Picture).filter(Picture.id.in_(ids)).all()
+    p_m = {}
+    for e in ru:
+        p_m[e.id] = e.url0
+    a = []
+    for e in r:
+        t = e.dic_return()
+        df = 'img/default_female.jpg' if e.sex == 0 else 'img/default_male.jpg'
+        t['src'] = p_m.get(e.id, df)
+        a.append(t)
+
+    return n, a
+
+'''
+参与的约会
+uid: 报名参加人的id
+return: 帖子总数, 帖子结果
+'''
+def participate_dating(uid, page=None, limit=None, next_=None,  s=None):
+    if not uid or not uid.isdigit():
+        return 0, None
+    page = conf.toffset_dating_page if not page else int(page)
+    limit = conf.toffset_dating_limit if not limit else int(limit)
+    next_ = 0 if not next_ else int(next_)
+    
+    f = s
+    if not f:
+        s = DBSession()
+    r = s.query(Yh_baoming).filter(Yh_baoming.userid == uid).limit(limit).offset(page*next_)
+    if not r:
+        if not f:
+            s.close()
+        return 0, []
+    ids = [e.dating_id for e in  r]
+    rd = s.query(Dating).filter(Dating.id.in_(ids)).all()
+    if not rd:
+        if not f:
+            s.close()
+        return 0, []
+    d_m = {}
+    for e in rd:
+        d_m[e.id] = e.dic_return()
+
+    a = [d_m[e] for e in d_m]
+
+    if not f:
+        s.close()
+    return n, a
+
+def create_dating(name=None, uid=None, age=18, sex=0, sjt=6, dt=None,\
+        loc1=None, loc2=None, locd='未填', obj=2, num=1, fee=0, bc='无',\
+        valid_time=1, t=None):
+    if not name or not uid or not dt:
+        return None
+    if not loc1 and not loc2:
+        return None
+    loc1 = loc1 if loc1 else ''
+    loc2 = loc2 if loc2 else ''
+    if not t:
+        t = time.localtime()
+        t = time.strftime('%Y-%m-%d %H:%M:%S', t)
+    d = Dating(name=name, uid=uid, age=age, sex=sex, sjt=sjt, dt=dt,\
+               loc1=loc1, loc2=loc2, locd=locd, obj=obj, num=num,\
+               fee=fee, bc=bc, valid_time=valid_time, t=t)
+    s = DBSession()
+    s.add(d)
+    try:
+        s.commit()
+    except:
+        s.close()
+        m = d.dic_return()
+        msg = 'creating dating failed: %s' % m
+        print(msg)
+        return False
+    return True
+        
+def remove_dating(uid=None, did=None):
+    if not uid or not did:
+        return None
+    s = DBSession()
+    r = s.query(Dating).filter(and_(Dating.id == did, Dating.userid == uid)).all()
+    if not r:
+        s.close()
+        return True
+    s.query(Dating).filter(Dating.id == did).delete(synchronize_session=False)
+    try:
+        s.commit()
+    except:
+        s.close()
+        msg = 'remove dating did: %s' % str(did)
+        print(msg)
+        return False
+    s.close()
+    return True
+
+
 __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'user_regist', 'query_user', 'query_user_login', 'get_user_info',
          'update_basic','get_ctx_info', 'edit_statement', 'edit_other',
-         'verify_wx_qq_email', 'isee', 'seeme', 'icare',
-         'public_conn','query_new', 'find_users']
+         'verify_wx_qq_email', 'isee', 'seeme', 'icare', 'list_dating',
+         'public_conn','query_new', 'find_users', 'sponsor_dating',
+         'participate_dating', 'create_dating', 'remove_dating']
 
 
 if __name__ == '__main__':
-    r = seeme(14)
+    n, r = list_dating()
     print(r)
 '''
     r = user_regist('17313615918', '123', 1)

@@ -29,6 +29,8 @@ new_female=4
 isee_limit=50
 seeme_limit=50
 icare_limit=100
+dating_page=4
+dating_limit=4
 
 [digest]
 digest_salt=
@@ -45,3 +47,6 @@ table_add_record=add_record
 table_user_account=user_account
 table_look=look
 table_care=care
+table_dating=dating
+table_yh_baoming=yh_baoming
+table_zhenghun=zhenghun

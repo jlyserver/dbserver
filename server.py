@@ -440,6 +440,96 @@ class ICareHandler(tornado.web.RequestHandler):
             d = json.dumps(d)
             self.write(d)
 
+class ListDatingHandler(tornado.web.RequestHandler):
+    def post(self):
+        sex      = self.get_argument('sex', None)
+        age1     = self.get_argument('age1', None)
+        age2     = self.get_argument('age2', None)
+        loc1     = self.get_argument('loc1', None)
+        loc2     = self.get_argument('loc2', None)
+        page     = self.get_argument('page', None)
+        limit    = self.get_argument('limit', None)
+        next_    = self.get_argument('next', None)
+        r = list_dating(sex=sex, age1=age1, age2=age2, loc1=loc1, loc2=loc2, page=page, limit=limit, next_=next_)
+        d = {'code':0, 'msg':'ok', data:r}
+        d = json.dumps(d)
+        self.write(d)
+
+class CreateDatingHandler(tornado.web.RequestHandler):
+    def post(self):
+        name       = self.get_argument('nick_name', None)
+        uid        = self.get_argument('uid', None)
+        age        = int(self.get_argument('age', 18))
+        sex        = self.get_argument('sex', None)
+        sjt        = self.get_argument('subject', None)
+        dt         = int(self.get_argument('dtime', 1))
+        loc1       = self.get_argument('loc1', '')
+        loc2       = self.get_argument('loc2', '')
+        locd       = self.get_argument('locd', None)
+        obj        = self.get_argument('object', None)
+        num        = self.get_argument('num', 1)
+        fee        = self.get_argument('fee', 0)
+        bc         = self.get_argument('bc', '')
+        vt         = self.get_argument('valid_time', 1)
+        d = {'code': 0, 'msg': 'ok'}
+        if not name or not uid or not sex or not sjt or not obj:
+            d = {'code':-1, 'msg':'参数不全'}
+        if not loc1 and not loc2:
+            d = {'code': -1, 'msg':'参数不全'}
+        if d['code'] == 0:
+            r = create_dating(name=name, uid=uid, age=age, sex=sex, sjt=sjt,\
+                    dt=dt, loc1=loc1, loc2=loc2, locd=locd, obj=obj, num=num,\
+                    fee=fee, bc=bc, valid_time=vt)
+            if not r:
+                d = {'code': -1, 'msg':'创建失败'}
+        d = json.dumps(d)
+        self.write(d)
+
+class RemoveDatingHandler(tornado.web.RequestHandler):
+    def post(self):
+        uid    = self.get_argument('uid', None)
+        did    = self.get_argument('did', None)
+        d = {'code': 0, 'msg':'ok'}
+        if not did or not uid:
+            d = {'code': -1, 'msg': '参数不正确'}
+        if d['code'] == 0:
+            r = remove_dating(uid=uid, did=did)
+            if not r:
+                d = {'code': -1, 'msg': '删除失败'}
+        d = json.dumps(d)
+        self.write(d)
+
+class ParticipateDatingHandler(tornado.web.RequestHandler):
+    def post(self):
+        uid   = self.get_argument('uid', None)
+        limit = int(self.get_argument('limit', 0))
+        page  = int(self.get_argument('page', 0))
+        next_ = int(self.get_argument('next', 0))
+        d = {'code': 0, 'msg': 'ok'}
+        if not uid:
+            d = {'code': -1, 'msg': '参数不正确'}
+        if d['code'] == 0:
+            n, r = participate_dating(uid, limit=limit, page=page, next_=next_)
+            if n >= 0:
+                d = {'code': 0, 'msg':'ok', 'data':{'num':n, 'data':r}}
+        d = json.dumps(d)
+        self.write(d)
+
+class SponsorDatingHandler(tornado.web.RequestHandler):
+    def post(self):
+        uid   = self.get_argument('uid', None)
+        limit = int(self.get_argument('limit', 0))
+        page  = int(self.get_argument('page', 0))
+        next_ = int(self.get_argument('next', 0))
+        d = {'code': 0, 'msg': 'ok'}
+        if not uid:
+            d = {'code': -1, 'msg': '参数不正确'}
+        if d['code'] == 0:
+            n, r = sponsor_dating(uid, limit=limit, page=page, next_=next_)
+            if n >= 0:
+                d = {'code': 0, 'msg':'ok', 'data':{'num':n, 'data':r}}
+        d = json.dumps(d)
+        self.write(d)
 
 if __name__ == "__main__":
     tornado.options.parse_command_line()
@@ -467,6 +557,11 @@ if __name__ == "__main__":
         ('/icare', ICareHandler),
         ('/new', IndexNewHandler),
         ('/find', FindHandler),
+        ('/list_dating', ListDatingHandler),
+        ('/create_dating', CreateDatingHandler),
+        ('/remove_dating', RemoveDatingHandler),
+        ('/participate_dating', ParticipateDatingHandler),
+        ('/sponsor_dating', SponsorDatingHandler),
               ]
     application = tornado.web.Application(handler, **settings)
     http_server = tornado.httpserver.HTTPServer(application)

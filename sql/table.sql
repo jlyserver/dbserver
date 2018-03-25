@@ -23,6 +23,7 @@ create table if not exists user
     ori_loc2  varchar(8) default '', /*籍贯所在市(区)*/
     state tinyint default 0, /*征友状态 0=征友进行中 1=找到意中人*/
     regist_time timestamp default CURRENT_TIMESTAMP not null,
+    last_login  timestamp,
     valid_state tinyint not null default 0, /*状态 0=合法 1=被禁止*/
     msg varchar(32) default '' /*被禁止的原因*/
 ) engine=InnoDB, charset=utf8;
@@ -161,6 +162,7 @@ create table if not exists dating
 (
     id int unsigned primary key auto_increment,
     userid  int unsigned not null,  /*发起人id*/
+    nick_name varchar(16),          /*发起人昵称*/
     age  tinyint unsigned not null, /*发起人年龄*/
     sex  tinyint unsigned not null, /*发起人性别 0=女 1=男*/
     subject tinyint unsigned not null, /* 0=约饭 1=电影 2=交友 3=聊天
@@ -169,7 +171,7 @@ create table if not exists dating
     loc1  varchar(8) not null,     /*约会地点 省(直辖市)*/
     loc2  varchar(8) not null,     /*约会地点 市(区) */
     loc_detail varchar(64),        /*约会详细地点*/
-    object tinyint unsigned not null, /*0=男士 1=女士 2=男女均可*/
+    object1 tinyint unsigned not null, /*0=男士 1=女士 2=男女均可*/
     numbers int unsigned not null, /*约会人数*/
     fee tinyint unsigned not null, /*0=发起人付 1=AA 2=男士付款,女士免单 3=视情况而定*/
     buchong varchar(160),  /*约会补充*/
@@ -183,7 +185,26 @@ create table if not exists dating
 create table if not exists yh_baoming
 (
     id int unsigned primary key auto_increment,
-    userid  int unsigned not null,  /*发起人id*/
-    userid1 int unsigned not null,  /*报名人id*/
+    dating_id  int unsigned not null,  /*帖子id*/
+    userid int unsigned not null,  /*报名人id*/
     time_ timestamp default CURRENT_TIMESTAMP
+) engine=InnoDB, charset=utf8;
+
+
+/*征婚帖子*/
+create table if not exists zhenghun
+(
+    id int unsigned primary key auto_increment,
+    userid  int unsigned not null,  /*发起人id*/
+    age  tinyint unsigned not null, /*发起人年龄*/
+    sex  tinyint unsigned not null, /*发起人性别 0=女 1=男*/
+    loc1  varchar(8) not null,     /*征婚地点 省(直辖市)*/
+    loc2  varchar(8) not null,     /*征婚地点 市(区) */
+    time_ timestamp default CURRENT_TIMESTAMP, /*发帖时间*/
+    valid_day int unsigned not null, /*报名有效期限 单位天 <= 365 */
+    title varchar(64), /*帖子标题*/
+    content varchar(800), /*帖子内容*/
+    object1 tinyint not null, /*=0征GG =1征MM*/
+    valid_state tinyint not null default 0, /*0=帖子有效 1=被禁止*/
+    msg varchar(32) /*被禁止的原因*/
 ) engine=InnoDB, charset=utf8;

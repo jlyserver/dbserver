@@ -28,7 +28,7 @@ class User(Base):
             sex=0, aim=0, age=18,\
             m=0, xz=0, sx=0, blood=0, salary=0, wt=50, ht=160, de=0, \
             na=1, cl1='', cl2='', ori1='', ori2='', st=0,
-            t=None, v_st=0, msg=''):
+            t=None, last_t='', v_st=0, msg=''):
         self.id       = id_
         self.nick_name= name
         self.password = password
@@ -56,6 +56,7 @@ class User(Base):
             self.regist_time = now
         else:
             self.regist_time = t
+        self.last_login  = last_t
         self.valid_state = v_st
         self.msg         = msg
 
@@ -81,12 +82,13 @@ class User(Base):
     ori_loc2          = Column(String(8))
     state             = Column(Integer)
     regist_time       = Column(TIMESTAMP)
+    last_login        = Column(TIMESTAMP)
     valid_state       = Column(Integer)
     msg               = Column(String(32))
 
     def dic_return(self):
         return { 'id':       self.id,          'nick_name': self.nick_name, 
-                 'mobile':    self.mobile,
+                 'mobile':    self.mobile,     'last_login': str(self.last_login),
                  'sex':       self.sex,
                  'aim':      self.aim,         'age':       self.age,
                  'marriage': self.marriage,    'xingzuo':   self.xingzuo,
@@ -428,11 +430,147 @@ class Care(Base):
     from_id      = Column(Integer)
     to_id        = Column(Integer)
     time_        = Column(TIMESTAMP)
+    def dic_return(self):
+        return {'id': self.id,        'from_id': self.from_id,
+                'to_id': self.to_id,  'time': str(self.time_)}
+
+#################################################################
+
+class Dating(Base):
+    __tablename__ = conf.table_dating
+    def __init__(self, id_=0, name='', uid=0, age=18, sex=0, sjt=6, dt=None,\
+                 loc1='', loc2='', locd='', obj=2, num=1, fee=0,\
+                 bc='', valid_time=1, t_=None, v_st=0, msg=''):
+        self.id       = id_
+        self.nick_name= name
+        self.userid   = uid
+        self.age      = age
+        self.sex      = sex
+        self.subject  = sjt
+        self.loc1     = loc1
+        self.loc2     = loc2
+        self.loc_detail = locd
+        self.object1    = obj
+        self.numbers    = num
+        self.fee        = fee
+        self.buchong    = bc
+        self.valid_time = valid_time
+        self.valid_state= v_st
+        self.msg        = msg
+        if not t_:
+            t_    = time.localtime()
+            now  = time.strftime('%Y-%m-%d %H:%M:%S', t_)
+            self.time_ = now
+        else:
+            self.time_ = t_
+        if not dt:
+            t      = time.time() + 3600*3
+            t      = time.strftime('%Y-%m-%d %H:%M:%S', t)
+            self.dtime = t
+        else:
+            self.dtime = dt
+    id           = Column(Integer, primary_key=True)
+    userid       = Column(Integer)
+    nick_name    = Column(String(16))
+    age          = Column(Integer)
+    sex          = Column(Integer)
+    subject      = Column(Integer)
+    dtime        = Column(TIMESTAMP)
+    loc1         = Column(String(8))
+    loc2         = Column(String(8))
+    loc_detail   = Column(String(64))
+    object1      = Column(Integer)
+    numbers      = Column(Integer)
+    fee          = Column(Integer)
+    buchong      = Column(String(160))
+    valid_time   = Column(Integer)
+    time_        = Column(TIMESTAMP)
+    valid_state  = Column(Integer)
+    msg          = Column(String(32))
+    def dic_return(self):
+        return {'id': self.id,   'uid': self.userid,
+                'age': self.age,  'sex': self.sex,
+                'subject': self.subject, 'dtime': str(self.dtime),
+                'loc1': self.loc1, 'loc2': self.loc2,
+                'loc_detail': self.loc_detail, 'object': self.object1,
+                'numbers': self.numbers, 'fee': self.fee,
+                'buchong': self.buchong, 'valid_time': self.valid_time,
+                'valid_state': self.valid_state, 'msg': self.msg,
+                'time': str(self.time_), 'nick_name': self.nick_name}
+
+#################################################################
+
+class Yh_baoming(Base):
+    __tablename__ = conf.table_yh_baoming
+    def __init__(self, id_=0, did=0, uid=0, t=None):
+        self.id         = id_
+        self.dating_id  = did
+        self.userid     = uid
+        if not t:
+            t    = time.localtime()
+            now  = time.strftime('%Y-%m-%d %H:%M:%S', t)
+            self.time_ = now
+        else:
+            self.time_ = t
+
+    id           = Column(Integer, primary_key=True)
+    dating_id    = Column(Integer)
+    userid       = Column(Integer)
+    time_        = Column(TIMESTAMP)
+    def dic_return(self):
+        return {'id': self.id,    'dating_id': self.dating_id,
+                'uid': self.userid, 'time': str(self.time_)}
+
+#################################################################
+
+class Zhenghun(Base):
+    __tablename__ = conf.table_zhenghun
+    def __init__(self, id_=0, uid=0, age=18, sex=0, loc1='',loc2='',\
+                 t=None, v_d=1, title='', cnt='', obj1=0, v_st=0, msg=''):
+        self.id       = id_
+        self.userid   = uid
+        self.age      = age
+        self.sex      = sex
+        self.loc1     = loc1
+        self.loc2     = loc2
+        self.valid_day= v_d
+        self.title    = title
+        self.content  = cnt
+        self.object1  = obj1
+        self.valid_state = v_st
+        self.msg      = msg
+        if not t:
+            t    = time.localtime()
+            now  = time.strftime('%Y-%m-%d %H:%M:%S', t)
+            self.time_ = now
+        else:
+            self.time_ = t
+    id            = Column(Integer, primary_key=True)
+    userid        = Column(Integer)
+    age           = Column(Integer)
+    sex           = Column(Integer)
+    loc1          = Column(String(8))
+    loc2          = Column(String(8))
+    time_         = Column(TIMESTAMP)
+    valid_day     = Column(Integer)
+    title         = Column(String(64))
+    content       = Column(String(800))
+    object1       = Column(Integer)
+    valid_state   = Column(Integer)
+    msg           = Column(String(32))
+    def dic_return(self):
+        return {'id': self.id,      'uid': self.userid,
+                'age': self.age,    'sex': self.sex,
+                'loc1': self.loc1,  'loc2': self.loc2,
+                'valid_day': self.valid_day,  'title': self.title,
+                'content': self.content,  'object': self.object1,
+                'valid_state': self.valid_state, 'msg': self.msg,
+                'time': str(self.time_)}
 
 #################################################################
 __all__=['DBSession', 'User', 'Statement', 'OtherInfo', 'Picture', 'Hobby',
          'Email', 'Consume_record', 'Add_record', 'User_account', 'Look',
-         'Care']
+         'Care', 'Dating', 'Yh_baoming', 'Zhenghun']
 '''
 '''
 if __name__ == '__main__':

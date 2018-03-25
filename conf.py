@@ -28,6 +28,8 @@ class Picconf():
         self.toffset_isee_limit = p.getint('toffset', 'isee_limit')
         self.toffset_seeme_limit= p.getint('toffset', 'seeme_limit')
         self.toffset_icare_limit= p.getint('toffset', 'icare_limit')
+        self.toffset_dating_page= p.getint('toffset', 'dating_page')
+        self.toffset_dating_limit = p.getint('toffset', 'dating_limit')
 
         self.digest_salt     = p.get('digest', 'digest_salt')
 
@@ -42,6 +44,9 @@ class Picconf():
         self.table_user_account = p.get('table', 'table_user_account')
         self.table_look         = p.get('table', 'table_look')
         self.table_care         = p.get('table', 'table_care')
+        self.table_dating       = p.get('table', 'table_dating')
+        self.table_yh_baoming   = p.get('table', 'table_yh_baoming')
+        self.table_zhenghun     = p.get('table', 'table_zhenghun')
     def dis(self):
         print(self.port)
 

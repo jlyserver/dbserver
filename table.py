@@ -30,6 +30,8 @@ class User(Base):
             na=1, cl1='', cl2='', ori1='', ori2='', st=0,
             t=None, last_t='', v_st=0, msg=''):
         self.id       = id_
+        if len(name) == 0:
+            name = '新用户%s' % self.mobile[-4:]
         self.nick_name= name
         self.password = password
         self.mobile   = mobile
@@ -457,6 +459,7 @@ class Dating(Base):
         self.valid_time = valid_time
         self.valid_state= v_st
         self.msg        = msg
+        self.scan_count = 0
         if not t_:
             t_    = time.localtime()
             now  = time.strftime('%Y-%m-%d %H:%M:%S', t_)
@@ -485,11 +488,12 @@ class Dating(Base):
     buchong      = Column(String(160))
     valid_time   = Column(Integer)
     time_        = Column(TIMESTAMP)
+    scan_count   = Column(Integer)
     valid_state  = Column(Integer)
     msg          = Column(String(32))
     def dic_return(self):
-        return {'id': self.id,   'uid': self.userid,
-                'age': self.age,  'sex': self.sex,
+        return {'id': self.id,   'uid': self.userid, 'age': self.age, 
+                'sex': self.sex, 'scan_count': self.scan_count,
                 'subject': self.subject, 'dtime': str(self.dtime),
                 'loc1': self.loc1, 'loc2': self.loc2,
                 'loc_detail': self.loc_detail, 'object': self.object1,
@@ -525,10 +529,11 @@ class Yh_baoming(Base):
 
 class Zhenghun(Base):
     __tablename__ = conf.table_zhenghun
-    def __init__(self, id_=0, uid=0, age=18, sex=0, loc1='',loc2='',\
+    def __init__(self, id_=0, uid=0, name='', age=18, sex=0, loc1='',loc2='',\
                  t=None, v_d=1, title='', cnt='', obj1=0, v_st=0, msg=''):
         self.id       = id_
         self.userid   = uid
+        self.nick_name= name
         self.age      = age
         self.sex      = sex
         self.loc1     = loc1
@@ -547,6 +552,7 @@ class Zhenghun(Base):
             self.time_ = t
     id            = Column(Integer, primary_key=True)
     userid        = Column(Integer)
+    nick_name     = Column(String(16))
     age           = Column(Integer)
     sex           = Column(Integer)
     loc1          = Column(String(8))
@@ -565,7 +571,7 @@ class Zhenghun(Base):
                 'valid_day': self.valid_day,  'title': self.title,
                 'content': self.content,  'object': self.object1,
                 'valid_state': self.valid_state, 'msg': self.msg,
-                'time': str(self.time_)}
+                'time': str(self.time_), 'nick_name': self.nick_name}
 
 #################################################################
 __all__=['DBSession', 'User', 'Statement', 'OtherInfo', 'Picture', 'Hobby',

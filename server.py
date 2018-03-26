@@ -531,6 +531,96 @@ class SponsorDatingHandler(tornado.web.RequestHandler):
         d = json.dumps(d)
         self.write(d)
 
+class DetailDatingHandler(tornado.web.RequestHandler):
+    def post(self):
+        did      = self.get_argument('did', None)
+        d = {}
+        if not did:
+            d = {'code':-1, 'msg':'参数不全'}
+        else:
+            r = detail_dating(did=did)
+            if not r:
+                d = {'code':-1, 'msg': '参数不对'}
+            else:
+                d = {'code':0, 'msg': 'ok', 'data':r}
+        d = json.dumps(d)
+        self.write(d)
+        self.finish()
+class BaomingDatingHandler(tornado.web.RequestHandler):
+    def post(self):
+        did      = self.get_argument('did', None)
+        uid      = self.get_argument('uid', None)
+        d = {}
+        if not uid or not did:
+            d = {'code':-1, 'msg':'参数不全'}
+        else:
+            r = baoming_dating(uid=uid, did=did)
+            if not r:
+                d = {'code':-1, 'msg': '参数不对'}
+            else:
+                d = {'code':0, 'msg': '报名成功'}
+        d = json.dumps(d)
+        self.write(d)
+        self.finish()
+
+class ListZhenghunHandler(tornado.web.RequestHandler):
+    def post(self):
+        sex      = self.get_argument('sex', None)
+        age1     = self.get_argument('age1', None)
+        age2     = self.get_argument('age2', None)
+        loc1     = self.get_argument('loc1', None)
+        loc2     = self.get_argument('loc2', None)
+        page     = self.get_argument('page', None)
+        limit    = self.get_argument('limit', None)
+        next_    = self.get_argument('next', None)
+        n, r = list_zhenghun(sex, age1, age2, loc1, loc2, page, limit, next_)
+        d = {'code':-1, 'msg':'参数不对'}
+        if n >= 0:
+            d = {'code': 0, 'msg': 'ok', 'data': r}
+        d = json.dumps(d)
+        self.write(d)
+
+class CreateZhenghunHandler(tornado.web.RequestHandler):
+    def post(self):
+        uid       = self.get_argument('uid', None)
+        name      = self.get_argument('nick_name', None)
+        age       = self.get_argument('age', None)
+        sex       = self.get_argument('sex', None)
+        loc1      = self.get_argument('loc1', None)
+        loc2      = self.get_argument('loc2', None)
+        v_d       = self.get_argument('valid_time', None)
+        title     = self.get_argument('title', None)
+        cnt       = self.get_argument('content', None)
+        obj1      = self.get_argument('object1', None)
+        d = {'code': -1, 'msg': '参数不对'}
+        if not uid or not name or not age or not sex or not title or not obj1:
+            d = {'code': -1, 'msg': '参数不对'}
+        else:
+            r = create_zhenghun(uid, name, age, sex, loc1, loc2,
+                                v_d, title, cnt, obj1)
+            if r:
+                d = {'code': 0, 'msg':'ok'}
+        d = json.dumps(d)
+        self.write(d)
+        
+class RemoveZhenghunHandler(tornado.web.RequestHandler):
+    def post(self):
+        zid    = self.get_argument('zid', None)
+        d = {'code': -1 , 'msg': '参数不正确'}
+        if zid:
+            r = remove_zhenghun(zid)
+            if r:
+                d = {'code': 0, 'msg': 'ok'}
+        d = json.dumps(d)
+        self.write(d)
+        
+
+#我发起的征婚
+class SponsorZhenghunHandler(tornado.web.RequestHandler):
+    def post(self):
+        pass
+
+
 if __name__ == "__main__":
     tornado.options.parse_command_line()
     settings = {
@@ -562,6 +652,12 @@ if __name__ == "__main__":
         ('/remove_dating', RemoveDatingHandler),
         ('/participate_dating', ParticipateDatingHandler),
         ('/sponsor_dating', SponsorDatingHandler),
+        ('/detail_dating', DetailDatingHandler),
+        ('/baoming_dating', BaomingDatingHandler),
+        ('/list_zhenghun', ListZhenghunHandler),
+        ('/create_zhenghun', CreateZhenghunHandler),
+        ('/remove_zhenghun', RemoveZhenghunHandler),
+        ('/sponsor_zhenghun', SponsorZhenghunHandler),
               ]
     application = tornado.web.Application(handler, **settings)
     http_server = tornado.httpserver.HTTPServer(application)

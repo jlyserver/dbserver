@@ -50,3 +50,7 @@ table_care=care
 table_dating=dating
 table_yh_baoming=yh_baoming
 table_zhenghun=zhenghun
+
+[pic]
+pic_ip=http://47.94.105.76
+postfix=2_600×800.jpg

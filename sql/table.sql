@@ -77,6 +77,12 @@ create table if not exists picture
     url9 varchar(64) default '' 
 ) engine=InnoDB, charset=utf8;
 
+create table if not exists deprecated_picture
+(
+  id int unsigned primary key auto_increment,
+  src varchar(64) default ''
+) engine=InnoDB, charset=utf8;
+
 /*兴趣爱好*/
 create table if not exists hobby
 (

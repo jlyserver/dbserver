@@ -9,6 +9,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 import sys
 reload(sys)
+sys.setdefaultencoding('utf-8')
 sys.path.append('..')
 
 from conf import conf
@@ -221,12 +222,23 @@ class Picture(Base):
     def dic_array(self):
         a = [self.url0, self.url1, self.url2, self.url3, self.url4,\
              self.url5, self.url6, self.url7, self.url8, self.url9]
+        for i in xrange(len(a)):
+            if len(a[i]):
+                a[i] = '%s/%s/%s' % (conf.pic_ip, a[i], conf.postfix)
         return {'id':   self.id,     'count': self.count,  'arr': a}
     def dic_default(self, id_=0):
         self.id = id_
         a = ['' for i in xrange(self.count+1) ]
         return {'id':   self.id,     'count': self.count,  'arr': a}
 
+###########################################
+class DeprecatedPicture(Base):
+    __tablename__ = 'deprecated_picture'
+    def __init__(self, id_=0, src=''):
+        self.id  = id_
+        self.src = src
+    id           = Column(Integer, primary_key=True)
+    src          = Column(String(64))
 
 ###########################################
 class Hobby(Base):
@@ -576,7 +588,7 @@ class Zhenghun(Base):
 #################################################################
 __all__=['DBSession', 'User', 'Statement', 'OtherInfo', 'Picture', 'Hobby',
          'Email', 'Consume_record', 'Add_record', 'User_account', 'Look',
-         'Care', 'Dating', 'Yh_baoming', 'Zhenghun']
+         'Care', 'Dating', 'Yh_baoming', 'Zhenghun', 'DeprecatedPicture']
 '''
 '''
 if __name__ == '__main__':

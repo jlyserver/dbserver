@@ -181,7 +181,7 @@ def query_pic_by_uid(uid, s=None):
             pt = Picture(id_=uid)
             s.add(pt)
             s.commit()
-            r = pt.dic_return()
+            r = pt.dic_array()
     except:
         r = {}
     if not t:
@@ -668,6 +668,90 @@ def verify_wx_qq_email(num, kind, **ctx):
         return None
     s.close()
     return ctx
+
+def write_img(uid=None, first=None, second=None, third=None, kind=None):
+    if not uid or not first or not second or not third or not kind:
+        return None
+    s = DBSession()
+    r = s.query(Picture).filter(Picture.id == uid).first()
+    if not r or r.count < 1:
+        s.close()
+        return None
+    else:
+        src = '%s/%s/%s' % (first, second, third)
+        if kind == '1':
+            if len(r.url0) and src != r.url0:
+                dp = DeprecatedPicture(0, r.url0)
+                s.add(dp)
+            r.url0 = src
+        else:
+            r.count = r.count - 1
+            if not len(r.url1):
+                r.url1 = src
+            elif not len(r.url2):
+                r.url2 = src
+            elif not len(r.url3):
+                r.url3 = src
+            elif not len(r.url4):
+                r.url4 = src
+            elif not len(r.url5):
+                r.url5 = src
+            elif not len(r.url6):
+                r.url6 = src
+            elif not len(r.url7):
+                r.url7 = src
+            elif not len(r.url8):
+                r.url8 = src
+            elif not len(r.url9):
+                r.url9 = src
+            else:
+                s.close()
+                return None
+        s.commit()
+    s.close()
+    return True
+
+def delimg(uid=None, src=None):
+    if not uid or not src:
+        return None
+    s = DBSession()
+    r = s.query(Picture).filter(Picture.id == uid).first()
+    if not r:
+        s.close()
+        return None
+    if r.url0 == src:
+        r.url0 = ''
+        r.count = r.count + 1
+    elif r.url1 == src:
+        r.url1, r.url2, r.url3, r.url4, r.url5, r.url6, r.url7, r.url8, r.url9 = r.url2, r.url3, r.url4, r.url5, r.url6, r.url7, r.url8, r.url9, ''
+        r.count = r.count + 1
+    elif r.url2 == src:
+        r.url2, r.url3, r.url4, r.url5, r.url6, r.url7, r.url8, r.url9 = r.url3, r.url4, r.url5, r.url6, r.url7, r.url8, r.url9, ''
+        r.count = r.count + 1
+    elif r.url3 == src:
+        r.url3, r.url4, r.url5, r.url6, r.url7, r.url8, r.url9 = r.url4, r.url5, r.url6, r.url7, r.url8, r.url9, ''
+        r.count = r.count + 1
+    elif r.url4 == src:
+        r.url4, r.url5, r.url6, r.url7, r.url8, r.url9 = r.url5, r.url6, r.url7, r.url8, r.url9, ''
+        r.count = r.count + 1
+    elif r.url5 == src:
+        r.url5, r.url6, r.url7, r.url8, r.url9 = r.url6, r.url7, r.url8, r.url9, ''
+        r.count = r.count + 1
+    elif r.url6 == src:
+        r.url6, r.url7, r.url8, r.url9 = r.url7, r.url8, r.url9, ''
+        r.count = r.count + 1
+    elif r.url7 == src:
+        r.url7, r.url8, r.url9 = r.url8, r.url9, ''
+        r.count = r.count + 1
+    elif r.url8 == src:
+        r.url8, r.url9 = r.url9, ''
+        r.count = r.count + 1
+    elif r.url9 == src:
+        r.url9 = ''
+        r.count = r.count + 1
+    s.commit()
+    s.close()
+    return True
 #充值
 def recharge(uid, num, s=None):
     if not uid or not num or num < 0:
@@ -1279,8 +1363,9 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'verify_wx_qq_email', 'isee', 'seeme', 'icare', 'list_dating',
          'public_conn','query_new', 'find_users', 'sponsor_dating',
          'participate_dating', 'create_dating', 'remove_dating',
-         'detail_dating', 'baoming_dating', 'list_zhenghun',
-         'create_zhenghun', 'remove_zhenghun', 'sponsor_zhenghun']
+         'detail_dating', 'baoming_dating', 'list_zhenghun', 'write_img',
+         'create_zhenghun', 'remove_zhenghun', 'sponsor_zhenghun',
+         'delimg']
 
 
 if __name__ == '__main__':

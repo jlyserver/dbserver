@@ -360,6 +360,40 @@ class VerifyOtherHandler(tornado.web.RequestHandler):
                     d = {'code': -1, 'msg': '验证失败'}
         d = json.dumps(d)
         self.write(d)
+
+class ImgHandler(tornado.web.RequestHandler):
+    def post(self):
+        uid = self.get_argument('uid', None)
+        f   = self.get_argument('f',   None)
+        s   = self.get_argument('s',   None)
+        t   = self.get_argument('t',   None)
+        k   = self.get_argument('k',   None)
+        d = {'code': -1, 'msg': '参数不正确'}
+        if not uid or not f or not s or not t or not k:
+            d = {'code': -1, 'msg': '参数不正确'}
+        else:
+            r = write_img(uid=uid, first=f, second=s, third=t, kind=k)
+            if r:
+               d = {'code': 0, 'msg': 'ok'}
+        d = json.dumps(d)
+        self.write(d)
+        self.finish()
+            
+class DelImgHandler(tornado.web.RequestHandler):
+    def post(self):
+        uid = self.get_argument('uid', None)
+        src = self.get_argument('src', None)
+        d = {'code': -1, 'msg': '参数不正确'}
+        if not uid or not src:
+            d = {'code': -1, 'msg': '参数不正确'}
+        else:
+            r = delimg(uid=uid, src=src)
+            if r:
+                d = {'code': 0, 'msg': 'ok'}
+        d = json.dumps(d)
+        self.write(d)
+            
+
 class PublicHandler(tornado.web.RequestHandler):
     def post(self):
         ctx       = self.get_argument('ctx', None)
@@ -399,10 +433,10 @@ class ISeeHandler(tornado.web.RequestHandler):
         else:
             uid = int(uid)
             n, r = isee(uid)
-            if not r:
-                d = {'code': -2, 'msg': '请先登录'}
-            else:
+            if n >= 0:
                 d = {'code': 0, 'msg':'ok', 'data': {'count':n, 'data':r}}
+            else:
+                d = {'code': -2, 'msg': '请先登录'}
             d = json.dumps(d)
             self.write(d)
 
@@ -641,6 +675,8 @@ if __name__ == "__main__":
         ('/statement_edit', StatementEditHandler),
         ('/other_edit', OtherEditHandler),
         ('/verify_other', VerifyOtherHandler),
+        ('/img', ImgHandler),
+        ('/delimg', DelImgHandler),
         ('/public', PublicHandler),
         ('/isee', ISeeHandler),
         ('/seeme', SeeMeHandler),

@@ -62,8 +62,6 @@ class IndexNewHandler(tornado.web.RequestHandler):
             now = time.strftime('%Y-%m-%d %H:%M:%S', t)
             r = query_new(t, sex, limit, page, next_)
             d = {'code':0, 'msg':'ok', 'data':r}
-            print('sex=%d'%sex)
-            print(d)
             d = json.dumps(d)
             self.write(d)
 
@@ -450,10 +448,10 @@ class SeeMeHandler(tornado.web.RequestHandler):
         else:
             uid = int(uid)
             n, r = seeme(uid)
-            if not r:
-                d = {'code': -2, 'msg': '请先登录'}
-            else:
+            if n >= 0:
                 d = {'code': 0, 'msg':'ok', 'data': {'count':n, 'data':r}}
+            else:
+                d = {'code': -2, 'msg': '请先登录'}
             d = json.dumps(d)
             self.write(d)
 
@@ -467,10 +465,10 @@ class ICareHandler(tornado.web.RequestHandler):
         else:
             uid = int(uid)
             n, r = icare(uid)
-            if not r:
-                d = {'code': -2, 'msg': '请先登录'}
-            else:
+            if n >= 0:
                 d = {'code': 0, 'msg':'ok', 'data': {'count':n, 'data':r}}
+            else:
+                d = {'code': -2, 'msg': '请先登录'}
             d = json.dumps(d)
             self.write(d)
 

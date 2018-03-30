@@ -487,6 +487,9 @@ def query_new(t, sex, limit, page, next_):
     s = DBSession()
     r = s.query(User).filter(User.sex == sex).filter(User.regist_time >= t).limit(limit).offset(page*next_)
     ids = [e.id for e in r]
+    if not ids:
+        s.close()
+        return None
     m = s.query(Statement).filter(Statement.id.in_(ids)).all()
     m_ = {}
     for e in m:
@@ -496,11 +499,11 @@ def query_new(t, sex, limit, page, next_):
     for e in p:
         p_[e.id] = e.dic_array()
     D = {}
-    pic_default = Picture()
-    st_defautl = Statement()
     for e in r:
-        pic = p_.get(e.id, pic_default.dic_default(e.id))
-        st  = m_.get(e.id, st_defautl.dic_default(e.id))
+        pic = p_.get(e.id)
+        st  = m_.get(e.id)
+        if not pic or not st:
+            continue
         D[e.id] = {'user':e.dic_return2(), 'pic':pic, 'statement':st}
     s.close()
     return [D[e] for e in D] if D else []
@@ -912,7 +915,7 @@ def see(uid, kind, s=None):
         s.query(Look).filter(Look.id.in_(a2)).delete(synchronize_session=False)
         s.commit()
     m_a1_t = {}
-    ids = [e.to_id for e in a1]
+    ids = [e.to_id for e in a1] if kind == 1 else [e.from_id for e in a1]
     if not ids:
         if not f:
             s.close()
@@ -928,12 +931,17 @@ def see(uid, kind, s=None):
     N = len(a1)
     for e in a1:
         [t1, t2] = str(e.time_).split(' ')
-        u = m_u.get(e.to_id)
-        p = m_p.get(e.to_id, '')
+        k = e.to_id if kind == 1 else e.from_id
+        u = m_u.get(k)
+        if not u:
+            continue
+        df = 'img/default_female.jpg' if u['sex'] == 2 else 'img/default_male.jpg'
+        p = m_p.get(k)
+        p = df if not p else p
         if not u:
             N = N - 1
             continue
-        d = {'id':e.to_id, 'nick_name':u['nick_name'], 'sex':u['sex'],
+        d = {'id':k, 'nick_name':u['nick_name'], 'sex':u['sex'],
              'age': u['age'], 'curr_loc1':u['curr_loc1'],
              'curr_loc2':u['curr_loc2'], 'src': p, 'time':t2}
         if not m_a1_t.get(t1):
@@ -1004,10 +1012,12 @@ def icare(uid, s=None):
     for e in a1:
         [t1, t2] = str(e.time_).split(' ')
         u = m_u.get(e.to_id)
-        p = m_p.get(e.to_id, '')
         if not u:
             N = N - 1
             continue
+        p = m_p.get(e.to_id, '')
+        df = 'img/default_female.jpg' if u['sex'] == 2 else 'img/default_male.jpg'
+        p = df if not p else p
         d = {'id':e.to_id, 'nick_name':u['nick_name'], 'sex':u['sex'],
              'age': u['age'], 'curr_loc1':u['curr_loc1'],
              'curr_loc2':u['curr_loc2'], 'src': p, 'time':t2}

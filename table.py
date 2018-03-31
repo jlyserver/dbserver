@@ -130,9 +130,9 @@ class Statement(Base):
 class OtherInfo(Base):
     __tablename__ = conf.table_otherinfo
     def __init__(self, id_, salary=0, work=0, house=0, car=0,\
-                mobile='未填', verify_m=0, public_m=1, email='未填', \
-                verify_e=0, public_e=1, wx='未填', verify_w=0, \
-                public_w=1, qq='未填', verify_q=0, public_q=1):
+                mobile='', verify_m=0, public_m=1, email='', \
+                verify_e=0, public_e=1, wx='', verify_w=0, \
+                public_w=1, qq='', verify_q=0, public_q=1):
         self.id          = id_
         self.salary      = salary
         self.work        = work
@@ -355,18 +355,18 @@ class Consume_record(Base):
         else:
             self.time_ = t
         self.id       = id_
-        self.user_id  = uid
+        self.userid  = uid
         self.objid    = oid
         self.way      = way
         self.num      = num
     id           = Column(Integer, primary_key=True)
-    user_id      = Column(Integer)
+    userid      = Column(Integer)
     objid        = Column(Integer)
     way          = Column(Integer)
     num          = Column(Integer)
     time_        = Column(TIMESTAMP)
     def dic_return(self):
-        return {'id':   self.id,     'user_id': self.user_id,
+        return {'id':   self.id,     'user_id': self.userid,
                 'objid': self.objid, 'way':  self.way, 
                 'num':     self.num, 'time': self.time_}
 ##########################################################

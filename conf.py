@@ -50,6 +50,17 @@ class Picconf():
 
         self.pic_ip             = p.get('pic', 'pic_ip')
         self.postfix            = p.get('pic', 'postfix')
+
+        self.mobile_fee         = p.getint('fee', 'mobile_fee')
+        self.wx_fee             = p.getint('fee', 'wx_fee')
+        self.qq_fee             = p.getint('fee', 'qq_fee')
+        self.email_fee          = p.getint('fee', 'email_fee')
+        self.send_email_fee     = p.getint('fee', 'send_email_fee')
+        self.yanyuan_fee        = p.getint('fee', 'yanyuan_fee')
+        self.yuehui_fee         = p.getint('fee', 'yuehui_fee')
+        self.zhenghun_fee       = p.getint('fee', 'zhenghun_fee')
+        self.timeout_fee        = p.getint('fee', 'timeout_fee')
+        self.free_bean          = p.getint('fee', 'free_bean')
     def dis(self):
         print(self.port)
 

@@ -54,3 +54,15 @@ table_zhenghun=zhenghun
 [pic]
 pic_ip=http://47.94.105.76
 postfix=2_600×800.jpg
+
+[fee]
+mobile_fee=1
+wx_fee=1
+qq_fee=1
+email_fee=1
+send_email_fee=1
+yanyuan_fee=1
+yuehui_fee=2
+zhenghun_fee=2
+timeout_fee=30
+free_bean=10

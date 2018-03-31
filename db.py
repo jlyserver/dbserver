@@ -10,6 +10,18 @@ import json
 from sqlalchemy.sql import and_, or_, not_
 from sqlalchemy import desc
 
+nation_table = {0:'未填', 1:'汉族', 2:'壮族', 3:'满族', 4:'回族', 5:'苗族',
+    6:'维吾尔族', 7:'土家族', 8:'彝族', 9:'蒙古族', 10:'藏族',
+    11:'布依族', 12:'侗族', 13:'瑶族', 14:'朝鲜族', 15:'白族',
+    16:'哈尼族', 17:'哈萨克族', 18:'黎族', 19:'傣族', 20:'畲族',
+    21:'傈傈族', 22:'仡佬族', 23:'东乡族', 24:'高山族', 25:'拉祜族',
+    26:'水族', 27:'佤族', 28:'纳西族', 29:'羌族', 30:'土族',
+    31:'仫佬族', 32:'锡伯族', 33:'柯尔克孜族', 34:'达翰尔族', 35:'景颇族',
+    36:'毛南族', 37:'撒拉族', 38:'布朗族', 39:'塔吉克族', 40:'阿昌族',
+    41:'普米族', 42:'鄂温克族', 43:'怒族', 44:'京族', 45:'基诺族',
+    46:'德昂族', 47:'保安族', 48:'俄罗斯族', 49:'裕固族', 50:'乌孜别克族',
+    51:'门巴族', 52:'鄂伦春族', 53:'独龙族', 54:'塔塔尔族', 55:'赫哲族',
+    56:'珞巴族'}
 def digest(word):
     m2 = hashlib.md5()
     line = '%s%s' % (word, conf.digest_salt)
@@ -111,16 +123,36 @@ def query_user_login(mobile, passwd, s=None):
     t = s
     if not s:
         s = DBSession()
-    r = {}
+    rs = {}
     try:
         tok = digest(passwd)
         r = s.query(User).filter(and_(User.mobile == mobile, User.password == tok)).first()
-        r = {} if not r else r.dic_return()
+        rs = {} if not r else r.dic_return()
     except:
-        r = {}
+        rs = {}
+    if not rs:
+        if not t:
+            s.close()
+        return rs
+    uid = r.id
+    ft  = time.localtime()
+    now = time.strftime('%Y-%m-%d %H:%M:%S', ft)
+    r.last_login = now
+    day = rs['last_login'].split(' ')[0]
+    nd  = now.split(' ')[0]
+    s.commit()
+    if day != nd:
+        r = s.query(User_account).filter(User_account.id == uid).first()
+        if not r:
+            u = User_account(uid, 0, conf.free_bean)
+            s.add(u)
+        else:
+            r.free = conf.free_bean
+        s.commit()
+    
     if not t:
         s.close()
-    return r
+    return rs
 #根据用户的uid查询内心独白和个性签名
 def query_statement_by_uid(uid, s=None):
     if not uid:
@@ -265,6 +297,7 @@ def get_ctx_info(uid, s=None):
             s.close()
         return {}
     c['user'] = r.dic_return()
+    c['user']['nation_name'] = nation_table.get(int(c['user']['nation']), '未填')
     
     st = query_statement_by_uid(uid, s=s)
     c['statement'] = st
@@ -275,6 +308,10 @@ def get_ctx_info(uid, s=None):
     p = query_pic_by_uid(uid, s=s)
     c['pic'] = p
 
+    sex = c['user']['sex']
+    df = 'img/default_female.jpg' if sex == 2 else 'img/default_male.jpg'
+    if len(c['pic']['arr'][0]) == 0:
+       c['pic']['arr'][0] = '%s/%s' % (conf.pic_ip, df)
     h = query_hobby_by_uid(uid, s=s)
     c['hobby'] = h
 
@@ -344,6 +381,7 @@ def update_basic(nick_name=None, aim=None, age=None,\
         ctx['user']['degree'] = i
     if nation:
         u[User.nation] = int(nation)
+        ctx['user']['nation_name'] = nation_table.get(int(nation), '未填')
         ctx['user']['nation'] = int(nation)
     if cur_loc1:
         u[User.curr_loc1] = cur_loc1
@@ -630,6 +668,53 @@ def edit_other(salary=None, work=None, car=None, house=None, **ctx):
     s.commit()
     s.close()
     return ctx
+'''
+kind=1 看手机 =2 看微信 =3看qq =4看邮箱号
+return: =-1参数不对
+'''
+def seeother(kind=None, uid=None, cuid=None):
+    if not kind or kind not in [1,2,3,4] or not uid or not cuid:
+        return {'code':-1, 'msg':'参数错误'}
+    fee_table = [0, conf.mobile_fee, conf.wx_fee, conf.qq_fee, conf.email_fee] 
+    s = DBSession()
+    o = query_otherinfo_by_uid(uid, s=s)
+    if not o:
+        s.close()
+        return {'code':-1, 'msg':'没有此用户'}
+    info = [0, o['mobile'], o['wx'], o['qq'], o['email']]
+    conn = info[kind]
+    if len(conn) == 0:
+        s.close()
+        return {'code':-1, 'msg':'用户未填,不扣豆'}
+    ru = s.query(User_account).filter(User_account.id == cuid).first()
+    if not ru:
+        s.close()
+        return {'code':-1, 'msg':'没有此用户'}
+    cond = and_(Consume_record.userid == cuid, Consume_record.objid == uid, Consume_record.way == kind+4)
+    rc = s.query(Consume_record).filter(cond).first()
+    if rc:
+        s.close()
+        return {'code':0, 'msg':'ok', 'data':{'account': ru.dic_return(), 'conn': conn}}
+    else:
+        fee = fee_table[kind] 
+        if ru.free >= fee:
+            ru.free = ru.free - fee
+            ac = ru.dic_return()
+            s.commit()
+            s.close()
+            return {'code':0, 'msg':'ok', 'data':{'account': ac, 'conn':conn}}
+        elif ru.num >= fee:
+            ru.num = ru.num - fee
+            ac = ru.dic_return()
+            c = Consume_record(0, cuid, uid, kind+4, fee)
+            s.add(c)
+            s.commit()
+            s.close()
+            return {'code':0, 'msg':'ok', 'data':{'account': ac, 'conn':conn}}
+        else:
+            s.close()
+            return {'code':-1, 'msg':'余额不足'}
+
 '''
 num:  微信号或qq号或email
 kind: =1验证微信 =2验证qq =3验证email
@@ -1375,13 +1460,9 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'participate_dating', 'create_dating', 'remove_dating',
          'detail_dating', 'baoming_dating', 'list_zhenghun', 'write_img',
          'create_zhenghun', 'remove_zhenghun', 'sponsor_zhenghun',
-         'delimg']
+         'delimg', 'seeother']
 
 
 if __name__ == '__main__':
-    n, r = list_dating()
+    r = seeother(2, 12, 19)
     print(r)
-'''
-    r = user_regist('17313615918', '123', 1)
-    print(r)
-'''

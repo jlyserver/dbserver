@@ -123,7 +123,7 @@ class LoginHandler(tornado.web.RequestHandler):
         else:
             r = query_user_login(mobile, passwd)
             if not r:
-                d = {'code': -1, 'msg': 'not exist'}
+                r = {'code': -1, 'msg': 'not exist'}
             else:
                 uid = r['id']
                 info = get_user_info(uid)
@@ -334,6 +334,19 @@ class OtherEditHandler(tornado.web.RequestHandler):
                     r = {'code': 0, 'msg': '编辑成功', 'data': r}
                 r = json.dumps(r)
                 self.write(r)
+
+class SeeOtherHandler(tornado.web.RequestHandler):
+    def post(self):
+        kind = int(self.get_argument('kind', 0))
+        uid  = self.get_argument('uid', None)
+        cuid = self.get_argument('cuid', None)
+        d = {'code': -1, 'msg':'参数不正确'}
+        if kind not in [1,2,3,4] or not uid or not cuid:
+            d = {'code': -1, 'msg':'参数不正确'}
+        else:
+            d = seeother(kind=kind, uid=uid, cuid=cuid)
+        d = json.dumps(d)
+        self.write(d)
 
 class VerifyOtherHandler(tornado.web.RequestHandler):
     def post(self):
@@ -672,6 +685,7 @@ if __name__ == "__main__":
         ('/basic_edit', BasicEditHandler), 
         ('/statement_edit', StatementEditHandler),
         ('/other_edit', OtherEditHandler),
+        ('/seeother', SeeOtherHandler),
         ('/verify_other', VerifyOtherHandler),
         ('/img', ImgHandler),
         ('/delimg', DelImgHandler),

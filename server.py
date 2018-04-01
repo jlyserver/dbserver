@@ -95,6 +95,93 @@ class FindHandler(tornado.web.RequestHandler):
             d = json.dumps(d)
             self.write(d)
 
+class EmailHandler(tornado.web.RequestHandler):
+    def post(self):
+        uid = self.get_argument('uid', None)
+        page = self.get_argument('page', None)
+        next_ = self.get_argument('next', None)
+        d = {} 
+        if not uid or not page or not next_:
+            d = {'code': -1, 'msg': '参数不正确'}
+        else:
+            r = email(uid=uid, page=page, next_=next_)
+            if not r:
+                d = {'code': -1, 'msg': '参数不正确'}
+            else:
+                d = {'code': 0, 'msg': 'ok', 'data': r}
+        d = json.dumps(d)
+        self.write(d)
+
+class FrequentConnHandler(tornado.web.RequestHandler):
+    def post(self):
+        uid = self.get_argument('uid', None)
+        d = {}
+        if not uid:
+            d = {'code': -1, 'msg': '参数不正确'}
+        else:
+            r = frequent_conn(uid=uid)       
+            if not r:
+                d = {'code': -1, 'msg': '参数不正确'}
+            else:
+                d = {'code': 0, 'msg': 'ok', 'data': r}
+        d = json.dumps(d)
+        self.write(d)
+
+class SendEmailHandler(tornado.web.RequestHandler):
+    def post(self):
+        uid  = self.get_argument('uid', None)
+        cuid = self.get_argument('cuid',None)
+        cnt  = self.get_argument('content', None)
+        d = {} 
+        if not uid or not cuid or not cnt: 
+            d = {'code': -1, 'msg': '参数不正确'}
+        elif uid == cuid:
+            d = {'code': -1, 'msg': '自己不用给自己发信'}
+        else:
+            r = sendemail(uid=uid, cuid=cuid, content=cnt)
+            if not r:
+                d = {'code': -1, 'msg': '参数不正确'}
+            else:
+                d = {'code': 0, 'msg': 'ok'}
+        d = json.dumps(d)
+        self.write(d)
+    
+class YanyuanHandler(tornado.web.RequestHandler):
+    def post(self):
+        uid  = self.get_argument('uid', None)
+        cuid = self.get_argument('cuid',None)
+        d = {} 
+        if not uid or not cuid: 
+            d = {'code': -1, 'msg': '参数不正确'}
+        elif uid == cuid:
+            d = {'code': -1, 'msg': '自己不用给自己发眼缘'}
+        else:
+            r = yanyuan(uid=uid, cuid=cuid)
+            if not r:
+                d = {'code': -1, 'msg': '参数不正确'}
+            else:
+                d = {'code': 0, 'msg': 'ok'}
+        d = json.dumps(d)
+        self.write(d)
+
+class YanyuanCheckHandler(tornado.web.RequestHandler):
+    def post(self):
+        uid  = self.get_argument('uid', None)
+        cuid = self.get_argument('cuid',None)
+        d = {} 
+        if not uid or not cuid: 
+            d = {'code': -1, 'msg': '参数不正确'}
+        elif uid == cuid:
+            d = {'code': -1, 'msg': '自己不用给自己发眼缘'}
+        else:
+            r = yanyuan_check(uid=uid, cuid=cuid)
+            if not r:
+                d = {'code': -1, 'msg': '参数不正确'}
+            else:
+                d = {'code': 0, 'msg': 'ok', 'data':{'yanyuan':1}}
+        d = json.dumps(d)
+        self.write(d)
+
 class CtxHandler(tornado.web.RequestHandler):
     def post(self):
         uid = self.get_argument('uid', None)
@@ -695,6 +782,10 @@ if __name__ == "__main__":
         ('/icare', ICareHandler),
         ('/new', IndexNewHandler),
         ('/find', FindHandler),
+        ('/email', EmailHandler),
+        ('/sendemail', SendEmailHandler),
+        ('/yanyuan', YanyuanHandler),
+        ('/yanyuan_check', YanyuanCheckHandler),
         ('/list_dating', ListDatingHandler),
         ('/create_dating', CreateDatingHandler),
         ('/remove_dating', RemoveDatingHandler),

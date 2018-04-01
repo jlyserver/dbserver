@@ -111,7 +111,19 @@ create table if not exists email
     id int unsigned primary key auto_increment,
     from_id int unsigned not null,
     to_id   int unsigned not null,
-    content varchar(256),
+    content varchar(512),
+    kind     tinyint unsigned default 0, /** =0普通消息 =1系统消息**/   
+    from_del tinyint unsigned default 0, /** =1 发送方已删除 **/
+    to_del   tinyint unsigned default 0, /** =1 接收方已删除 **/
+    time_ timestamp default CURRENT_TIMESTAMP
+) engine=InnoDB, charset=utf8;
+
+/*发送yanyuan*/
+create table if not exists yanyuan
+(
+    id int unsigned primary key auto_increment,
+    from_id int unsigned not null,
+    to_id   int unsigned not null,
     time_ timestamp default CURRENT_TIMESTAMP
 ) engine=InnoDB, charset=utf8;
 

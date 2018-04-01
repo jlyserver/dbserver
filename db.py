@@ -1117,6 +1117,204 @@ def icare(uid, s=None):
     N = N if N > 0 else 0
     return N, D
 
+def yanyuan(uid=None, cuid=None, s=None):
+    if not uid or not cuid:
+        return None
+    if uid == cuid:
+        return None
+    f = s
+    if not f:
+        s = DBSession()
+    c = and_(Yanyuan.from_id == cuid, Yanyuan.to_id == uid)
+    r = s.query(Yanyuan).filter(c).first()
+    if r:
+        if not f:
+            s.close()
+        return True
+    y = Yanyuan(id_=0, f=cuid, t=uid)
+    s.add(y)
+    cnt = conf.msg_yanyuan
+    e = Email(id_=0, f=cuid, t=uid, c=cnt, k=1)
+    s.add(e)
+    s.commit()
+    if not f:
+        s.close()
+    return True
+
+def yanyuan_check(uid=None, cuid=None, s=None):
+    if not uid or not cuid:
+        return None
+    if uid == cuid:
+        return None
+    f = s
+    if not f:
+        s = DBSession()
+    c = and_(Yanyuan.from_id == cuid, Yanyuan.to_id == uid)
+    r = s.query(Yanyuan).filter(c).first()
+    if not f:
+        s.close()
+    return True if r else None
+
+#kind=1 收件 !=1 发件
+def __mail(kind=1, uid=None, page=None, next_=None, s=None):
+    if not uid or not page or next_ < 0:
+        return []
+    f = s
+    if not f:
+        s = DBSession()
+    c, d = True, {}
+    if kind == 1:
+        c = and_(Email.to_id == uid, Email.to_del == 0)
+    else:
+        c = and_(Email.from_id == uid, Email.from_del == 0)
+    c = and_(c, Email.kind == 0)
+    r = s.query(Email).filter(c).limit(page).offset(page*next_)
+    if not r:
+        if not f:
+            s.close()
+        return []
+    ids = []
+    if kind == 1:
+        ids = [e.from_id for e in r]
+    else:
+        ids = [e.to_id for e in r]
+    ru = s.query(User).filter(User.id.in_(ids)).all()
+    if not ru:
+        if not f:
+            s.close()
+        return []
+    u_m = {}
+    for e in ru:
+        u_m[e.id] = e.dic_return()
+
+    rp = s.query(Picture).filter(Picture.id.in_(ids)).all()
+    p_m = {}
+    for e in p_m:
+        p_m[e.id] = e.url0
+
+    e_m = {}
+    for e in r:
+        t = str(e.time_)
+        mail, d = {'content': e.content, 'time': str(e.time_)}, {}
+        if kind == 1:
+            u = u_m.get(e.from_id)
+            if not u:
+                continue
+            name = '新用户%s'% u['mobile'][-4:] if not u['nick_name'] else u['nick_name']
+            user = {'id': e.from_id, 'name': name, 'sex': u['sex']}
+            sex = u['sex']
+            df = 'img/default_female.jpg' if sex == 2 else 'img/default_male.jpg'
+            src = p_m.get(e.from_id, '')
+            if not src:
+                src = '%s/%s' % (conf.pic_ip, df)
+            user['pic'] = src
+            d = {'user': user, 'mail': mail}
+        else:
+            u = u_m.get(e.to_id)
+            if not u:
+                continue
+            name = '新用户%s'% u['mobile'][-4:] if not u['nick_name'] else u['nick_name']
+            user = {'id': e.to_id, 'name': name, 'sex': u['sex']}
+            sex = u['sex']
+            df = 'img/default_female.jpg' if sex == 2 else 'img/default_male.jpg'
+            src = p_m.get(e.to_id, '')
+            if not src:
+                src = '%s/%s' % (conf.pic_ip, df)
+            user['pic'] = src
+            d = {'user': user, 'mail': mail}
+        if not e_m.get(t):
+            e_m[t] = [d]
+        else:
+            e_m[t].append(d)
+    if not f:
+        s.close()
+
+    a = sorted(e_m.keys(), reverse=True)
+    D = []
+    for e in a:
+        for d in e_m[e]:
+            D.append(d)
+    return D
+    
+def email(uid=None, page=None, next_=None, s=None):
+    if not uid or not page or next_ < 0:
+        return None
+    f = s
+    if not f:
+        s = DBSession()
+    in_  = __mail(1, uid, page, next_, s)
+    out_ = __mail(2, uid, page, next_, s)
+    if not f:
+        s.close()
+    return {'in':in_, 'out':out_}
+
+def latest_conn(uid=None, s=None):
+    if not uid:
+        return -1, None
+    f = s
+    if not f:
+        s = DBSession()
+    uc = and_(User.id == uid, User.valid_state == 0)
+    ru = s.query(User).filter(uc).first()
+    if not ru:
+        if not f:
+            s.close()
+        return 0, []
+    sex = ru.sex 
+    c = or_(Email.from_id == uid, Email.to_id == uid)
+    c = and_(c, Email.kind == 0)
+    r = s.query(Email).filter(c).limit(20)
+    if not r:
+        if not f:
+            s.close()
+        return 0, []
+    e_m = {}
+    for e in r:
+        e_m[e.from_id] = 1
+        e_m[e.to_id] = 1
+    ids = e_m.keys()[:conf.toffset_freq_conn]
+    r = s.query(User).filter(User.id.in_(ids)).all()
+    u_m = {}
+    for e in r:
+        u_m[e.id] = e
+    rp = s.query(Picture).filter(Picture.id.in_(ids)).all()
+    p_m = {}
+    for e in rp:
+        d = e.dic_array()
+        p_m[e.id] = d['arr'][0]
+    a = []
+    for e in u_m:
+        name = u_m[e].nick_name
+        if not name:
+            name = '新用户%s'% u_m[e].mobile[-4:]
+        sex = u_m[e].sex
+        sex_name = '女' if sex == 2 else '男'
+        src = p_m.get(u_m[e].id, '')
+        if not src:
+            df = 'img/default_female.jpg' if sex == 2 else 'img/default_male.jpg'
+            src = '%s/%s' % (conf.pic_ip, df)
+        last_login = str(u_m[e].last_login)
+        d = {'name': name, 'sex': sex, 'src': src, 'last_login': last_login }
+        a.append(d)
+    if not f:
+        s.close()
+    return 0, a
+
+def sendemail(uid=None, cuid=None, content=None, s=None):
+    if not uid or not cuid or not content:
+        return None
+    if uid == cuid:
+        return None
+    f = s
+    if not f:
+        s = DBSession()
+    e = Email(id_=0, f=cuid, t=uid, c=content)
+    s.add(e)
+    s.commit()
+    if not f:
+        s.close()
+    return True
+
 def list_dating(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=None, limit=None, next_=None, s=None):
     page = conf.toffset_dating_page if not page else int(page)
     limit = conf.toffset_dating_limit if not limit else int(limit)
@@ -1460,9 +1658,10 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'participate_dating', 'create_dating', 'remove_dating',
          'detail_dating', 'baoming_dating', 'list_zhenghun', 'write_img',
          'create_zhenghun', 'remove_zhenghun', 'sponsor_zhenghun',
-         'delimg', 'seeother']
+         'delimg', 'seeother', 'sendemail', 'yanyuan', 'yanyuan_check',
+         'email', 'latest_conn']
 
 
 if __name__ == '__main__':
-    r = seeother(2, 12, 19)
+    r = latest_conn(19)
     print(r)

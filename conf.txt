@@ -31,6 +31,7 @@ seeme_limit=50
 icare_limit=100
 dating_page=4
 dating_limit=4
+freq_conn=6
 
 [digest]
 digest_salt=
@@ -42,6 +43,7 @@ table_otherinfo=otherinfo
 table_picture=picture
 table_hobby=hobby
 table_email=email
+table_yanyuan=yanyuan
 table_consume_record=consume_record
 table_add_record=add_record
 table_user_account=user_account
@@ -66,3 +68,6 @@ yuehui_fee=2
 zhenghun_fee=2
 timeout_fee=30
 free_bean=10
+
+[msg]
+msg_yanyuan=Ta对你有眼缘,赶快去看一下吧

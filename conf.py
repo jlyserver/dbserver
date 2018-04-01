@@ -30,6 +30,7 @@ class Picconf():
         self.toffset_icare_limit= p.getint('toffset', 'icare_limit')
         self.toffset_dating_page= p.getint('toffset', 'dating_page')
         self.toffset_dating_limit = p.getint('toffset', 'dating_limit')
+        self.toffset_freq_conn  = p.getint('toffset', 'freq_conn')
 
         self.digest_salt     = p.get('digest', 'digest_salt')
 
@@ -39,6 +40,7 @@ class Picconf():
         self.table_picture   = p.get('table', 'table_picture')
         self.table_hobby     = p.get('table', 'table_hobby')
         self.table_email     = p.get('table', 'table_email')
+        self.table_yanyuan   = p.get('table', 'table_yanyuan')
         self.table_consume_record = p.get('table', 'table_consume_record')
         self.table_add_record     = p.get('table', 'table_add_record')
         self.table_user_account = p.get('table', 'table_user_account')
@@ -61,6 +63,8 @@ class Picconf():
         self.zhenghun_fee       = p.getint('fee', 'zhenghun_fee')
         self.timeout_fee        = p.getint('fee', 'timeout_fee')
         self.free_bean          = p.getint('fee', 'free_bean')
+
+        self.msg_yanyuan        = p.get('msg', 'msg_yanyuan')
     def dis(self):
         print(self.port)
 

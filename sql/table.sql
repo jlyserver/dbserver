@@ -46,18 +46,22 @@ create table if not exists otherinfo
     mobile varchar(16) default '', /*电话*/
     verify_m tinyint default 0, /*0=未验证 1=已验证*/
     public_m tinyint default 0, /*0=公开 1=未公开*/
+    fee_m    int unsigned default 1, /*查看手机需要多少豆*/
 
     email varchar(64) default '', /*邮箱*/
     verify_e tinyint default 0, /*0=未验证 1=已验证*/
     public_e tinyint default 0, /*0=公开 1=未公开*/
+    fee_e    int unsigned default 1, /*查看email需要多少豆*/
 
     wx varchar(32) default '', /*微信*/
     verify_w tinyint default 0, /*0=未验证 1=已验证*/
     public_w tinyint default 0, /*0=公开 1=未公开*/
+    fee_w    int unsigned default 1, /*查看微信需要多少豆*/
     
     qq varchar(16) default '', /*qq*/
     verify_q tinyint default 0, /*0=未验证 1=已验证*/
-    public_q tinyint default 0  /*0=公开 1=未公开*/
+    public_q tinyint default 0, /*0=公开 1=未公开*/
+    fee_q    int unsigned default 1 /*查看qq需要多少豆*/
 ) engine=InnoDB, charset=utf8;
 
 /*用户的图片表*/
@@ -134,7 +138,7 @@ create table if not exists consume_record
     userid int unsigned not null,
     objid  int unsigned not null, /*userid 帖子id 或邮件id or user id*/
     way tinyint unsigned not null,/*1=发送眼缘 2=发信 3=约会帖 4=征婚帖 
-                                    5=查看手机 6=查看微信 7=查看QQ 8=查看邮件*/
+                                    5=查看手机 6=查看微信 7=查看QQ 8=查看邮箱号*/
     num int unsigned not null, /*发生个数 1个=0.1元*/
     time_ timestamp default CURRENT_TIMESTAMP
 ) engine=InnoDB, charset=utf8;

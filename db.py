@@ -681,7 +681,11 @@ def seeother(kind=None, uid=None, cuid=None):
     if not o:
         s.close()
         return {'code':-1, 'msg':'没有此用户'}
-    info = [0, o['mobile'], o['wx'], o['qq'], o['email']]
+    info = [0, o['mobile'],   o['wx'],      o['qq'],       o['email']]
+    pub  = [0, o['public_m'], o['public_w'],o['public_q'], o['public_e']]
+    vry  = [0, o['verify_m'], o['verify_w'],o['verify_q'], o['verify_e']]
+    pub_ = auth[kind]
+    vry_ = vry[kind]
     conn = info[kind]
     if len(conn) == 0:
         s.close()
@@ -696,6 +700,13 @@ def seeother(kind=None, uid=None, cuid=None):
         s.close()
         return {'code':0, 'msg':'ok', 'data':{'account': ru.dic_return(), 'conn': conn}}
     else:
+        if not pub_:
+            s.close()
+            return {'code':-1, 'msg':'用户为公开该联系方式'}
+        if not vry_:
+            s.close()
+            return {'code':-1, 'msg':'用户为填写该联系方式'}
+            
         fee = fee_table[kind] 
         if ru.free >= fee:
             ru.free = ru.free - fee
@@ -715,6 +726,55 @@ def seeother(kind=None, uid=None, cuid=None):
             s.close()
             return {'code':-1, 'msg':'余额不足'}
 
+def sawother(cuid=None, uid=None, s=None):
+    a = {'wx':0, 'qq': 0, 'email': 0, 'mobile':0, 'email1': 0, 'yanyuan':0}
+    if not cuid or not uid:
+        d = {'code': 0, 'msg': 'ok', 'data': a}
+        return d
+    f = s
+    if not f:
+        s = DBSession()
+    c = and_(Consume_record.userid == cuid, Consume_record.objid == uid)
+    c = and_(c, Consume_record.way != 3, Consume_record.way != 4)
+    r = s.query(Consume_record).filter(c).all()
+    if not r:
+        if not f:
+            s.close()
+        d = {'code':0, 'msg': 'ok', 'data': a}
+        return d
+    c_m = {}
+    n = 6
+    for e in r:
+        if n < 1:
+            break
+        if e.way == 1:
+            if a['yanyuan'] == 0:
+                n = n-1
+            a['yanyuan'] = 1
+        elif e.way == 2:
+            if a['email1'] == 0:
+                n = n-1
+            a['email1'] = 1
+        elif e.way == 5:
+            if a['mobile'] == 0:
+                n = n-1
+            a['mobile'] = 1
+        elif e.way == 6:
+            if a['wx'] == 0:
+                n = n-1
+            a['wx'] = 1
+        elif e.way == 7:
+            if a['qq'] == 0:
+                n = n-1
+            a['qq'] = 1
+        elif e.way == 8:
+            if a['email'] == 0:
+                n = n-1
+            a['email'] = 1
+
+    if not f:
+        s.close()
+    return {'code':0, 'msg': 'ok', 'data': a}
 '''
 num:  微信号或qq号或email
 kind: =1验证微信 =2验证qq =3验证email
@@ -1305,20 +1365,38 @@ def latest_conn(uid=None, s=None):
         s.close()
     return 0, a
 
+'''
+return: -1=参数不正确  -2=余额不足 0=成功
+'''
 def sendemail(uid=None, cuid=None, content=None, s=None):
     if not uid or not cuid or not content:
-        return None
+        return -1
     if uid == cuid:
-        return None
+        return -1
     f = s
     if not f:
         s = DBSession()
+    ru = s.query(User_account).filter(User_account.id == cuid).first()
+    if not ru:
+        if not f:
+            s.close()
+        return -1
+    fee = conf.send_email_fee
+    if ru.free >= fee:
+        ru.free = ru.free - fee
+    elif ru.num >= fee:
+        ru.num = ru.num - fee
+    else:
+        if not f:
+            s.close()
+        return -2
+
     e = Email(id_=0, f=cuid, t=uid, c=content)
     s.add(e)
     s.commit()
     if not f:
         s.close()
-    return True
+    return 0
 
 def list_dating(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=None, limit=None, next_=None, s=None):
     page = conf.toffset_dating_page if not page else int(page)
@@ -1664,9 +1742,9 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'detail_dating', 'baoming_dating', 'list_zhenghun', 'write_img',
          'create_zhenghun', 'remove_zhenghun', 'sponsor_zhenghun',
          'delimg', 'seeother', 'sendemail', 'yanyuan', 'yanyuan_check',
-         'email', 'latest_conn']
+         'email', 'latest_conn', 'sawother']
 
 
 if __name__ == '__main__':
-    r = latest_conn(19)
+    r = sawother(19,12)
     print(r)

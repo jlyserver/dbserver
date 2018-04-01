@@ -139,8 +139,10 @@ class SendEmailHandler(tornado.web.RequestHandler):
             d = {'code': -1, 'msg': '自己不用给自己发信'}
         else:
             r = sendemail(uid=uid, cuid=cuid, content=cnt)
-            if not r:
+            if r == -1:
                 d = {'code': -1, 'msg': '参数不正确'}
+            elif r == -2:
+                d = {'code': -1, 'msg': '余额不足'}
             else:
                 d = {'code': 0, 'msg': 'ok'}
         d = json.dumps(d)
@@ -209,8 +211,9 @@ class LoginHandler(tornado.web.RequestHandler):
             self.write(d)
         else:
             r = query_user_login(mobile, passwd)
+            d = {}
             if not r:
-                r = {'code': -1, 'msg': 'not exist'}
+                d = {'code': -1, 'msg': 'not exist'}
             else:
                 uid = r['id']
                 info = get_user_info(uid)
@@ -434,6 +437,19 @@ class SeeOtherHandler(tornado.web.RequestHandler):
             d = seeother(kind=kind, uid=uid, cuid=cuid)
         d = json.dumps(d)
         self.write(d)
+
+class SawOtherHandler(tornado.web.RequestHandler):
+    def post(self):
+        uid  = self.get_argument('uid', None)
+        cuid = self.get_argument('cuid', None)
+        d = {'code': -1, 'msg':'参数不正确'}
+        if not uid or not cuid:
+            d = {'code': -1, 'msg':'参数不正确'}
+        else:
+            d = sawother(uid=uid, cuid=cuid)
+        d = json.dumps(d)
+        self.write(d)
+
 
 class VerifyOtherHandler(tornado.web.RequestHandler):
     def post(self):
@@ -773,6 +789,7 @@ if __name__ == "__main__":
         ('/statement_edit', StatementEditHandler),
         ('/other_edit', OtherEditHandler),
         ('/seeother', SeeOtherHandler),
+        ('/sawother', SawOtherHandler),
         ('/verify_other', VerifyOtherHandler),
         ('/img', ImgHandler),
         ('/delimg', DelImgHandler),

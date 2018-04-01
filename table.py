@@ -141,15 +141,19 @@ class OtherInfo(Base):
         self.mobile      = mobile
         self.verify_m    = verify_m
         self.public_m    = public_m
+        self.fee_m       = conf.fee_m
         self.email       = email
         self.verify_e    = verify_e
         self.public_e    = public_e
+        self.fee_e       = conf.fee_e
         self.wx          = wx
         self.verify_w    = verify_w
         self.public_w    = public_w
+        self.fee_w       = conf.fee_w
         self.qq          = qq
         self.verify_q    = verify_q
         self.public_q    = public_q
+        self.fee_q       = conf.fee_q
 
     id           = Column(Integer, primary_key=True)
     salary       = Column(Integer)
@@ -159,18 +163,22 @@ class OtherInfo(Base):
     mobile       = Column(String(16))
     verify_m     = Column(Integer)
     public_m     = Column(Integer)
+    fee_m        = Column(Integer)
     
     email        = Column(String(64))
     verify_e     = Column(Integer)
     public_e     = Column(Integer)
+    fee_e        = Column(Integer)
 
     wx           = Column(String(32))
     verify_w     = Column(Integer)
     public_w     = Column(Integer)
+    fee_w        = Column(Integer)
 
     qq           = Column(String(16))
     verify_q     = Column(Integer)
     public_q     = Column(Integer)
+    fee_q        = Column(Integer)
     
     def dic_return(self):
         return {'id':      self.id,         'salary':     self.salary,
@@ -181,7 +189,9 @@ class OtherInfo(Base):
                 'public_e':self.public_e,   'wx':         self.wx,
                 'verify_w':self.verify_w,   'public_w':   self.public_w,
                 'qq':      self.qq,         'verify_q':   self.verify_q,
-                'public_q':self.public_q }
+                'public_q':self.public_q,   'fee_e':      self.fee_e,
+                'fee_w':   self.fee_w,      'fee_q':      self.fee_q,
+                'fee_m':   self.fee_e}
 
 ###########################################
 class Picture(Base):

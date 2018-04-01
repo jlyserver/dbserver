@@ -1201,6 +1201,7 @@ def __mail(kind=1, uid=None, page=None, next_=None, s=None):
             if not u:
                 continue
             name = '新用户%s'% u['mobile'][-4:] if not u['nick_name'] else u['nick_name']
+            sex_name = '男' if u['sex'] == 2 else '女'
             user = {'id': e.from_id, 'name': name, 'sex': u['sex']}
             sex = u['sex']
             df = 'img/default_female.jpg' if sex == 2 else 'img/default_male.jpg'
@@ -1208,6 +1209,7 @@ def __mail(kind=1, uid=None, page=None, next_=None, s=None):
             if not src:
                 src = '%s/%s' % (conf.pic_ip, df)
             user['pic'] = src
+            user['sex_name'] = sex_name
             d = {'user': user, 'mail': mail}
         else:
             u = u_m.get(e.to_id)
@@ -1215,12 +1217,14 @@ def __mail(kind=1, uid=None, page=None, next_=None, s=None):
                 continue
             name = '新用户%s'% u['mobile'][-4:] if not u['nick_name'] else u['nick_name']
             user = {'id': e.to_id, 'name': name, 'sex': u['sex']}
+            sex_name = '男' if u['sex'] == 2 else '女'
             sex = u['sex']
             df = 'img/default_female.jpg' if sex == 2 else 'img/default_male.jpg'
             src = p_m.get(e.to_id, '')
             if not src:
                 src = '%s/%s' % (conf.pic_ip, df)
             user['pic'] = src
+            user['sex_name'] = sex_name
             d = {'user': user, 'mail': mail}
         if not e_m.get(t):
             e_m[t] = [d]
@@ -1294,7 +1298,8 @@ def latest_conn(uid=None, s=None):
             df = 'img/default_female.jpg' if sex == 2 else 'img/default_male.jpg'
             src = '%s/%s' % (conf.pic_ip, df)
         last_login = str(u_m[e].last_login)
-        d = {'name': name, 'sex': sex, 'src': src, 'last_login': last_login }
+        d = {'name': name, 'sex': sex, 'src': src,
+            'last_login': last_login, 'sex_name':sex_name }
         a.append(d)
     if not f:
         s.close()

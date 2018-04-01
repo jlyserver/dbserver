@@ -112,15 +112,15 @@ class EmailHandler(tornado.web.RequestHandler):
         d = json.dumps(d)
         self.write(d)
 
-class FrequentConnHandler(tornado.web.RequestHandler):
+class LatestConnHandler(tornado.web.RequestHandler):
     def post(self):
         uid = self.get_argument('uid', None)
         d = {}
         if not uid:
             d = {'code': -1, 'msg': '参数不正确'}
         else:
-            r = frequent_conn(uid=uid)       
-            if not r:
+            n, r = latest_conn(uid=uid)       
+            if n < 0:
                 d = {'code': -1, 'msg': '参数不正确'}
             else:
                 d = {'code': 0, 'msg': 'ok', 'data': r}
@@ -783,6 +783,7 @@ if __name__ == "__main__":
         ('/new', IndexNewHandler),
         ('/find', FindHandler),
         ('/email', EmailHandler),
+        ('/latest_conn', LatestConnHandler),
         ('/sendemail', SendEmailHandler),
         ('/yanyuan', YanyuanHandler),
         ('/yanyuan_check', YanyuanCheckHandler),

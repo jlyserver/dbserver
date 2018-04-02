@@ -684,7 +684,7 @@ def seeother(kind=None, uid=None, cuid=None):
     info = [0, o['mobile'],   o['wx'],      o['qq'],       o['email']]
     pub  = [0, o['public_m'], o['public_w'],o['public_q'], o['public_e']]
     vry  = [0, o['verify_m'], o['verify_w'],o['verify_q'], o['verify_e']]
-    pub_ = auth[kind]
+    pub_ = pub[kind]
     vry_ = vry[kind]
     conn = info[kind]
     if len(conn) == 0:
@@ -1072,7 +1072,8 @@ def see(uid, kind, s=None):
     r = s.query(Picture).filter(Picture.id.in_(ids)).all()
     m_p = {}
     for e in r:
-        m_p[e.id] = e.url0
+        d = e.dic_array()
+        m_p[e.id] = d['arr'][0]
     N = len(a1)
     for e in a1:
         [t1, t2] = str(e.time_).split(' ')
@@ -1081,6 +1082,7 @@ def see(uid, kind, s=None):
         if not u:
             continue
         df = 'img/default_female.jpg' if u['sex'] == 2 else 'img/default_male.jpg'
+        df = '%s/%s' % (conf.pic_ip, df)
         p = m_p.get(k)
         p = df if not p else p
         if not u:
@@ -1177,6 +1179,32 @@ def icare(uid, s=None):
     N = N if N > 0 else 0
     return N, D
 
+'''
+kind =1关注 =0取消关注
+'''
+def sendcare(uid=None, cuid=None, kind=None):
+    if not uid or not cuid or not kind:
+        return None
+    s = DBSession()
+    c = and_(Care.from_id == cuid, Care.to_id == uid)
+    r = s.query(Care).filter(c).first()
+    if not r:
+        if kind == 0:
+            s.close()
+            return True
+        else:
+            ca = Care(id_=0, f=cuid, to=uid)
+            s.add(ca)
+            s.commit()
+            s.close()
+            return True
+    if kind == 0:
+        s.query(Care).filter(Care.id == r.id).delete(synchronize_session=False)
+        s.commit()
+        return True
+    s.close()
+    return True
+
 def yanyuan(uid=None, cuid=None, s=None):
     if not uid or not cuid:
         return None
@@ -1226,7 +1254,7 @@ def __mail(kind=1, uid=None, page=None, next_=None, s=None):
     if kind == 1:
         c = and_(Email.to_id == uid, Email.to_del == 0)
     else:
-        c = and_(Email.from_id == uid, Email.from_del == 0)
+        c = and_(Email.from_id == uid, Email.from_del == 0, Email.kind==0)
     c = and_(c, Email.kind == 0)
     r = s.query(Email).filter(c).limit(page).offset(page*next_)
     if not r:
@@ -1255,7 +1283,7 @@ def __mail(kind=1, uid=None, page=None, next_=None, s=None):
     e_m = {}
     for e in r:
         t = str(e.time_)
-        mail, d = {'content': e.content, 'time': str(e.time_)}, {}
+        mail, d = {'id': e.id, 'content': e.content, 'time': str(e.time_)}, {}
         if kind == 1:
             u = u_m.get(e.from_id)
             if not u:
@@ -1308,9 +1336,15 @@ def email(uid=None, page=None, next_=None, s=None):
         s = DBSession()
     in_  = __mail(1, uid, page, next_, s)
     out_ = __mail(2, uid, page, next_, s)
+    
+    c = and_(Email.to_id == uid, Email.to_del == 0)
+    ri = s.query(Email).filter(c).count()
+    c = and_(Email.from_id == uid, Email.from_del == 0, Email.kind == 0)
+    ro = s.query(Email).filter(c).count()
     if not f:
         s.close()
-    return {'in':in_, 'out':out_}
+    
+    return {'in':in_,'out':out_,'total_in':ri,'totoal_out':ro,'page':page}
 
 def latest_conn(uid=None, s=None):
     if not uid:
@@ -1397,6 +1431,37 @@ def sendemail(uid=None, cuid=None, content=None, s=None):
     if not f:
         s.close()
     return 0
+
+'''
+删除邮件只是将邮件标识为已删除,并未真正删除
+'''
+def del_email(uid=None, eid=None, s=None):
+    if not uid or not eid:
+        return None
+    f = s
+    if not f:
+        s = DBSession()
+    r = s.query(Email).filter(Email.id == eid).first()
+    if not r:
+        if not f:
+            s.close()
+        return True
+    if r.from_id == uid:
+        r.from_del = 1
+        s.commit()
+        if not f:
+            s.close()
+        return True
+    if r.to_id == uid:
+        r.to_del = 1
+        s.commit()
+        if not f:
+            s.close()
+        return True
+
+    if not f:
+        s.close()
+    return True
 
 def list_dating(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=None, limit=None, next_=None, s=None):
     page = conf.toffset_dating_page if not page else int(page)
@@ -1742,7 +1807,7 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'detail_dating', 'baoming_dating', 'list_zhenghun', 'write_img',
          'create_zhenghun', 'remove_zhenghun', 'sponsor_zhenghun',
          'delimg', 'seeother', 'sendemail', 'yanyuan', 'yanyuan_check',
-         'email', 'latest_conn', 'sawother']
+         'email', 'latest_conn', 'sawother', 'del_email']
 
 
 if __name__ == '__main__':

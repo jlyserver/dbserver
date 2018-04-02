@@ -141,19 +141,20 @@ class OtherInfo(Base):
         self.mobile      = mobile
         self.verify_m    = verify_m
         self.public_m    = public_m
-        self.fee_m       = conf.fee_m
+        self.fee_m       = conf.mobile_fee
         self.email       = email
         self.verify_e    = verify_e
         self.public_e    = public_e
-        self.fee_e       = conf.fee_e
+        self.fee_e       = conf.email_fee
         self.wx          = wx
         self.verify_w    = verify_w
         self.public_w    = public_w
-        self.fee_w       = conf.fee_w
+        self.fee_w       = conf.wx_fee
         self.qq          = qq
         self.verify_q    = verify_q
         self.public_q    = public_q
-        self.fee_q       = conf.fee_q
+        self.fee_q       = conf.qq_fee
+        self.fee_sendemail = conf.send_email_fee
 
     id           = Column(Integer, primary_key=True)
     salary       = Column(Integer)
@@ -179,6 +180,7 @@ class OtherInfo(Base):
     verify_q     = Column(Integer)
     public_q     = Column(Integer)
     fee_q        = Column(Integer)
+    fee_sendemail= Column(Integer)
     
     def dic_return(self):
         return {'id':      self.id,         'salary':     self.salary,
@@ -191,7 +193,7 @@ class OtherInfo(Base):
                 'qq':      self.qq,         'verify_q':   self.verify_q,
                 'public_q':self.public_q,   'fee_e':      self.fee_e,
                 'fee_w':   self.fee_w,      'fee_q':      self.fee_q,
-                'fee_m':   self.fee_e}
+                'fee_m':   self.fee_e, 'fee_sendemail':  self.fee_sendemail}
 
 ###########################################
 class Picture(Base):
@@ -632,11 +634,8 @@ __all__=['DBSession', 'User', 'Statement', 'OtherInfo', 'Picture', 'Hobby',
 '''
 if __name__ == '__main__':
     s = DBSession()
-    a = User_account(id_=0, uid=1)
-    try:
-        s.add(a)
-        s.commit()
-    except:
-        print('error')
+    r = s.query(OtherInfo).filter(OtherInfo.id == 10).first()
+    d = r.dic_return()
+    print(d)
     s.close()
 

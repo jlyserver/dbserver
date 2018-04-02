@@ -61,7 +61,8 @@ create table if not exists otherinfo
     qq varchar(16) default '', /*qq*/
     verify_q tinyint default 0, /*0=未验证 1=已验证*/
     public_q tinyint default 0, /*0=公开 1=未公开*/
-    fee_q    int unsigned default 1 /*查看qq需要多少豆*/
+    fee_q    int unsigned default 1, /*查看qq需要多少豆*/
+    fee_sendemail int unsigned default 1 /*发邮件需要多少豆*/
 ) engine=InnoDB, charset=utf8;
 
 /*用户的图片表*/

@@ -148,6 +148,22 @@ class SendEmailHandler(tornado.web.RequestHandler):
         d = json.dumps(d)
         self.write(d)
     
+class DelEmailHandler(tornado.web.RequestHandler):
+    def post(self):
+        uid  = self.get_argument('uid', None)
+        eid  = self.get_argument('eid',None)
+        d = {} 
+        if not uid or not eid: 
+            d = {'code': -1, 'msg': '参数不正确'}
+        else:
+            r = del_email(uid=uid, eid=eid)
+            if not r:
+                d = {'code': -1, 'msg': '参数不正确'}
+            else:
+                d = {'code': 0, 'msg': 'ok'}
+        d = json.dumps(d)
+        self.write(d)
+
 class YanyuanHandler(tornado.web.RequestHandler):
     def post(self):
         uid  = self.get_argument('uid', None)
@@ -192,6 +208,7 @@ class CtxHandler(tornado.web.RequestHandler):
             r = json.dumps(r)
             self.write(r)
         else:
+            uid = int(uid)
             d = get_ctx_info(uid)
             if not d:
                 r = {'code': -1, 'data': {}, 'msg': 'no user exist'}
@@ -434,6 +451,7 @@ class SeeOtherHandler(tornado.web.RequestHandler):
         if kind not in [1,2,3,4] or not uid or not cuid:
             d = {'code': -1, 'msg':'参数不正确'}
         else:
+            uid, cuid = int(uid), int(cuid)
             d = seeother(kind=kind, uid=uid, cuid=cuid)
         d = json.dumps(d)
         self.write(d)
@@ -587,6 +605,24 @@ class ICareHandler(tornado.web.RequestHandler):
                 d = {'code': -2, 'msg': '请先登录'}
             d = json.dumps(d)
             self.write(d)
+
+class SendCareHandler(tornado.web.RequestHandler):
+    def post(self):
+        uid = self.get_argument('uid', None)
+        cuid= self.get_argument('cuid',None)
+        kind= self.get_argument('kind', None)
+        d = {}
+        if not uid or not cuid or not kind:
+            d = {'code': -1, 'msg':'参数不正确'}
+        else:
+            uid, cuid, kind = int(uid),int(cuid),int(kind)
+            r = sendcare(uid=uid, cuid=cuid, kind=kind)
+            if not r:
+                d = {'code': 0, 'msg':'ok'}
+            else:
+                d = {'code': -1, 'msg': '请先登录'}
+        d = json.dumps(d)
+        self.write(d)
 
 class ListDatingHandler(tornado.web.RequestHandler):
     def post(self):
@@ -797,11 +833,13 @@ if __name__ == "__main__":
         ('/isee', ISeeHandler),
         ('/seeme', SeeMeHandler),
         ('/icare', ICareHandler),
+        ('/sendcare', SendCareHandler),
         ('/new', IndexNewHandler),
         ('/find', FindHandler),
         ('/email', EmailHandler),
         ('/latest_conn', LatestConnHandler),
         ('/sendemail', SendEmailHandler),
+        ('/del_email', DelEmailHandler),
         ('/yanyuan', YanyuanHandler),
         ('/yanyuan_check', YanyuanCheckHandler),
         ('/list_dating', ListDatingHandler),

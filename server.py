@@ -104,11 +104,29 @@ class EmailHandler(tornado.web.RequestHandler):
         if not uid or not page or not next_:
             d = {'code': -1, 'msg': '参数不正确'}
         else:
+            uid, page, next_ = int(uid), int(page), int(next_)
             r = email(uid=uid, page=page, next_=next_)
             if not r:
                 d = {'code': -1, 'msg': '参数不正确'}
             else:
                 d = {'code': 0, 'msg': 'ok', 'data': r}
+        d = json.dumps(d)
+        self.write(d)
+
+class SeeEmailHandler(tornado.web.RequestHandler):
+    def post(self):
+        eid  = self.get_argument('eid', None)
+        cuid = self.get_argument('cuid', None)
+        d = {} 
+        if not eid or not cuid:
+            d = {'code': -1, 'msg': '参数不正确'}
+        else:
+            eid, cuid = int(eid), int(cuid)
+            r = see_email(eid=eid, cuid=cuid)
+            if not r:
+                d = {'code': -1, 'msg': '参数不正确'}
+            else:
+                d = {'code': 0, 'msg': 'ok'}
         d = json.dumps(d)
         self.write(d)
 
@@ -837,6 +855,7 @@ if __name__ == "__main__":
         ('/new', IndexNewHandler),
         ('/find', FindHandler),
         ('/email', EmailHandler),
+        ('/see_email', SeeEmailHandler),
         ('/latest_conn', LatestConnHandler),
         ('/sendemail', SendEmailHandler),
         ('/del_email', DelEmailHandler),

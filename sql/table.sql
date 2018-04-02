@@ -120,6 +120,7 @@ create table if not exists email
     kind     tinyint unsigned default 0, /** =0普通消息 =1系统消息**/   
     from_del tinyint unsigned default 0, /** =1 发送方已删除 **/
     to_del   tinyint unsigned default 0, /** =1 接收方已删除 **/
+    read_    tinyint unsigned default 0, /** =0 未读 =1已读  **/
     time_ timestamp default CURRENT_TIMESTAMP
 ) engine=InnoDB, charset=utf8;
 

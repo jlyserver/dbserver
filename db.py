@@ -296,6 +296,13 @@ def get_ctx_info(uid, s=None):
         if not f:
             s.close()
         return {}
+    now = time.localtime()
+    now = time.strftime('%Y-%m-%d %H:%M:%S', now)
+    if str(r.last_login).split(' ')[0] != now.split(' ')[0]:
+        r.last_login = now
+        D = {User_account.free:conf.free_bean}
+        ra = s.query(User_account).filter(User_account.id == r.id).update(D)
+        s.commit()
     c['user'] = r.dic_return()
     c['user']['nation_name'] = nation_table.get(int(c['user']['nation']), '未填')
     
@@ -1283,13 +1290,13 @@ def __mail(kind=1, uid=None, page=None, next_=None, s=None):
     e_m = {}
     for e in r:
         t = str(e.time_)
-        mail, d = {'id': e.id, 'content': e.content, 'time': str(e.time_)}, {}
+        mail, d = {'read':e.read_, 'id': e.id, 'content': e.content, 'time': str(e.time_)}, {}
         if kind == 1:
             u = u_m.get(e.from_id)
             if not u:
                 continue
             name = '新用户%s'% u['mobile'][-4:] if not u['nick_name'] else u['nick_name']
-            sex_name = '男' if u['sex'] == 2 else '女'
+            sex_name = '男' if u['sex'] == 1 else '女'
             user = {'id': e.from_id, 'name': name, 'sex': u['sex']}
             sex = u['sex']
             df = 'img/default_female.jpg' if sex == 2 else 'img/default_male.jpg'
@@ -1327,7 +1334,19 @@ def __mail(kind=1, uid=None, page=None, next_=None, s=None):
         for d in e_m[e]:
             D.append(d)
     return D
-    
+   
+def see_email(eid=None, cuid=None):
+    if not eid or not cuid:
+        return None
+    s = DBSession()
+    r = s.query(Email).filter(Email.id == eid).first()
+    if not r:
+        return True
+    r.read_ = 1
+    s.commit()
+    s.close()
+    return True
+
 def email(uid=None, page=None, next_=None, s=None):
     if not uid or not page or next_ < 0:
         return None
@@ -1336,7 +1355,11 @@ def email(uid=None, page=None, next_=None, s=None):
         s = DBSession()
     in_  = __mail(1, uid, page, next_, s)
     out_ = __mail(2, uid, page, next_, s)
-    
+  
+    unread = 0
+    for e in in_:
+        if e['mail']['read'] == 0:
+            unread = unread + 1
     c = and_(Email.to_id == uid, Email.to_del == 0)
     ri = s.query(Email).filter(c).count()
     c = and_(Email.from_id == uid, Email.from_del == 0, Email.kind == 0)
@@ -1344,7 +1367,7 @@ def email(uid=None, page=None, next_=None, s=None):
     if not f:
         s.close()
     
-    return {'in':in_,'out':out_,'total_in':ri,'totoal_out':ro,'page':page}
+    return {'in':in_,'out':out_,'total_in':ri,'totoal_out':ro,'page':page, 'unread':unread}
 
 def latest_conn(uid=None, s=None):
     if not uid:

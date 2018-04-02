@@ -348,6 +348,7 @@ class Email(Base):
         self.kind    = k
         self.from_del = 0
         self.to_del  = 0
+        self.read_   = 0
 
     id           = Column(Integer, primary_key=True)
     from_id      = Column(Integer)
@@ -356,11 +357,13 @@ class Email(Base):
     kind         = Column(Integer)
     from_del     = Column(Integer)
     to_del       = Column(Integer)
+    read_        = Column(Integer)
     time_        = Column(TIMESTAMP)
     def dic_return(self):
         return {'id': self.id,        'from_id': self.from_id,
                 'to_id': self.to_id,  'content': self.content,
-                'kind': self.kind,    'time': str(self.time_)}
+                'kind': self.kind,    'read': self.read_,
+                'time': str(self.time_)}
 ###########################################
 
 class Yanyuan(Base):

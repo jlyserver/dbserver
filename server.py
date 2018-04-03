@@ -137,6 +137,7 @@ class LatestConnHandler(tornado.web.RequestHandler):
         if not uid:
             d = {'code': -1, 'msg': '参数不正确'}
         else:
+            uid = int(uid)
             n, r = latest_conn(uid=uid)       
             if n < 0:
                 d = {'code': -1, 'msg': '参数不正确'}
@@ -150,13 +151,19 @@ class SendEmailHandler(tornado.web.RequestHandler):
         uid  = self.get_argument('uid', None)
         cuid = self.get_argument('cuid',None)
         cnt  = self.get_argument('content', None)
+        eid  = self.get_argument('eid', '')
+        kind = self.get_argument('kind', None)
         d = {} 
         if not uid or not cuid or not cnt: 
             d = {'code': -1, 'msg': '参数不正确'}
         elif uid == cuid:
             d = {'code': -1, 'msg': '自己不用给自己发信'}
         else:
-            r = sendemail(uid=uid, cuid=cuid, content=cnt)
+            if kind:
+                kind = int(kind)
+            else:
+                kind = 0
+            r = sendemail(uid=uid,cuid=cuid,content=cnt,eid=eid,kind=kind)
             if r == -1:
                 d = {'code': -1, 'msg': '参数不正确'}
             elif r == -2:
@@ -174,6 +181,7 @@ class DelEmailHandler(tornado.web.RequestHandler):
         if not uid or not eid: 
             d = {'code': -1, 'msg': '参数不正确'}
         else:
+            uid, eid = int(uid), int(eid)
             r = del_email(uid=uid, eid=eid)
             if not r:
                 d = {'code': -1, 'msg': '参数不正确'}
@@ -664,7 +672,7 @@ class CreateDatingHandler(tornado.web.RequestHandler):
         age        = int(self.get_argument('age', 18))
         sex        = self.get_argument('sex', None)
         sjt        = self.get_argument('subject', None)
-        dt         = int(self.get_argument('dtime', 1))
+        dt         = self.get_argument('dtime', None)
         loc1       = self.get_argument('loc1', '')
         loc2       = self.get_argument('loc2', '')
         locd       = self.get_argument('locd', None)

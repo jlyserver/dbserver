@@ -117,7 +117,7 @@ create table if not exists email
     from_id int unsigned not null,
     to_id   int unsigned not null,
     content varchar(512),
-    kind     tinyint unsigned default 0, /** =0普通消息 =1系统消息**/   
+    kind     tinyint unsigned default 0, /** =0邮件消息 =1眼缘消息 =关注消息**/   
     from_del tinyint unsigned default 0, /** =1 发送方已删除 **/
     to_del   tinyint unsigned default 0, /** =1 接收方已删除 **/
     read_    tinyint unsigned default 0, /** =0 未读 =1已读  **/

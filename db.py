@@ -1254,6 +1254,7 @@ def yanyuan_check(uid=None, cuid=None, s=None):
 def __mail(kind=1, uid=None, page=None, next_=None, s=None):
     if not uid or not page or next_ < 0:
         return []
+    uid, page, next_ = int(uid), int(page), int(next_)
     f = s
     if not f:
         s = DBSession()
@@ -1261,18 +1262,21 @@ def __mail(kind=1, uid=None, page=None, next_=None, s=None):
     if kind == 1:
         c = and_(Email.to_id == uid, Email.to_del == 0)
     else:
-        c = and_(Email.from_id == uid, Email.from_del == 0, Email.kind==0)
-    c = and_(c, Email.kind == 0)
+        c = and_(Email.from_id == uid, Email.from_del == 0)
     r = s.query(Email).filter(c).limit(page).offset(page*next_)
     if not r:
         if not f:
             s.close()
         return []
+    m_ids = {}
     ids = []
     if kind == 1:
-        ids = [e.from_id for e in r]
+        for e in r:
+            m_ids[e.from_id] = 1
     else:
-        ids = [e.to_id for e in r]
+        for e in r:
+            m_ids[e.to_id] = 1
+    ids = m_ids.keys()
     ru = s.query(User).filter(User.id.in_(ids)).all()
     if not ru:
         if not f:
@@ -1290,7 +1294,9 @@ def __mail(kind=1, uid=None, page=None, next_=None, s=None):
     e_m = {}
     for e in r:
         t = str(e.time_)
-        mail, d = {'read':e.read_, 'id': e.id, 'content': e.content, 'time': str(e.time_)}, {}
+        mail = {'read':e.read_, 'id': e.id, 'content': e.content,
+                'time': str(e.time_), 'kind': e.kind}
+        d = {}
         if kind == 1:
             u = u_m.get(e.from_id)
             if not u:
@@ -1362,7 +1368,7 @@ def email(uid=None, page=None, next_=None, s=None):
             unread = unread + 1
     c = and_(Email.to_id == uid, Email.to_del == 0)
     ri = s.query(Email).filter(c).count()
-    c = and_(Email.from_id == uid, Email.from_del == 0, Email.kind == 0)
+    c = and_(Email.from_id == uid, Email.from_del == 0)
     ro = s.query(Email).filter(c).count()
     if not f:
         s.close()
@@ -1391,8 +1397,10 @@ def latest_conn(uid=None, s=None):
         return 0, []
     e_m = {}
     for e in r:
-        e_m[e.from_id] = 1
-        e_m[e.to_id] = 1
+        if e.from_id != uid:
+            e_m[e.from_id] = 1
+        if e.to_id != uid:
+            e_m[e.to_id] = 1
     ids = e_m.keys()[:conf.toffset_freq_conn]
     r = s.query(User).filter(User.id.in_(ids)).all()
     u_m = {}
@@ -1415,7 +1423,7 @@ def latest_conn(uid=None, s=None):
             df = 'img/default_female.jpg' if sex == 2 else 'img/default_male.jpg'
             src = '%s/%s' % (conf.pic_ip, df)
         last_login = str(u_m[e].last_login)
-        d = {'name': name, 'sex': sex, 'src': src,
+        d = {'name': name, 'sex': sex, 'src': src, 'id': u_m[e].id,
             'last_login': last_login, 'sex_name':sex_name }
         a.append(d)
     if not f:
@@ -1423,9 +1431,14 @@ def latest_conn(uid=None, s=None):
     return 0, a
 
 '''
+cuid: 主动发信人id
+uid:  收信人id
+content: 发信内容
+eid: 邮件id, 如果有此eid,表示在此eid基础上回复信件,不收费
+kind: 邮件类型 0=普通信件 1=系统信件
 return: -1=参数不正确  -2=余额不足 0=成功
 '''
-def sendemail(uid=None, cuid=None, content=None, s=None):
+def sendemail(uid=None, cuid=None, content=None, eid=None, kind=0, s=None):
     if not uid or not cuid or not content:
         return -1
     if uid == cuid:
@@ -1433,22 +1446,34 @@ def sendemail(uid=None, cuid=None, content=None, s=None):
     f = s
     if not f:
         s = DBSession()
-    ru = s.query(User_account).filter(User_account.id == cuid).first()
-    if not ru:
-        if not f:
-            s.close()
-        return -1
-    fee = conf.send_email_fee
-    if ru.free >= fee:
-        ru.free = ru.free - fee
-    elif ru.num >= fee:
-        ru.num = ru.num - fee
-    else:
-        if not f:
-            s.close()
-        return -2
+    already = False
+    if eid:
+        eid = int(eid)
+        c = or_(Email.from_del == 0, Email.to_del == 0)
+        c1= and_(c, Email.kind == 0)
+        ralready = s.quey(Email).filter(Email.id == eid).filter(c1).first()
+        if ralready:
+            if ralready.from_id in [uid, cuid]:
+                already = True
+            if ralready.to_id in [uid, cuid]:
+                already = True
+    if not already:
+        ru = s.query(User_account).filter(User_account.id == cuid).first()
+        if not ru:
+            if not f:
+                s.close()
+            return -1
+        fee = conf.send_email_fee
+        if ru.free >= fee:
+            ru.free = ru.free - fee
+        elif ru.num >= fee:
+            ru.num = ru.num - fee
+        else:
+            if not f:
+                s.close()
+            return -2
 
-    e = Email(id_=0, f=cuid, t=uid, c=content)
+    e = Email(id_=0, f=cuid, t=uid, c=content, k=kind)
     s.add(e)
     s.commit()
     if not f:
@@ -1491,7 +1516,9 @@ def list_dating(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=None,
     limit = conf.toffset_dating_limit if not limit else int(limit)
     next_ = 0 if not next_ else int(next_)
     c = True
-    if sex and sex in ['0', '1']:
+    if sex:
+        sex = int(sex)
+    if sex and sex in [0, 1]:
         c = and_(c, Dating.sex == sex)
     if age1 and age1.isdigit():
         age1 = int(age1)
@@ -1518,18 +1545,47 @@ def list_dating(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=None,
         s = DBSession()
     n = s.query(Dating).filter(c).count()
     r = s.query(Dating).filter(c).limit(limit).offset(page*next_)
-    ids = [e.id for e in r]
+    if not r:
+        if not f:
+            s.close()
+        return n, []
+    tmp = {}
+    for e in r:
+        tmp[e.userid] = 1
+    ids = tmp.keys()
+    
     ru = []
     if ids:
-        ru = s.query(Picture).filter(Picture.id.in_(ids)).all()
-    p_m = {}
+        ru = s.query(User).filter(User.id.in_(ids)).all()
+    p_u = {}
     for e in ru:
-        p_m[e.id] = e.url0
+        p_u[e.id] = e.dic_return()
+
+    rp = []
+    if ids:
+        rp = s.query(Picture).filter(Picture.id.in_(ids)).all()
+    p_m = {}
+    for e in rp:
+        p = e.dic_array()
+        p_m[e.id] = p['arr'][0]
     a = []
     for e in r:
+        u = p_u.get(e.userid)
+        if not u:
+            n = n-1
+            continue
+        sex = u['sex']
         t = e.dic_return()
-        df = 'img/default_female.jpg' if e.sex == 0 else 'img/default_male.jpg'
-        t['src'] = p_m.get(e.id, df)
+        t['nick_name'] = u['nick_name']
+        t['sex'] = sex
+        t['sex_name'] = '男' if sex == 1 else '女'
+        t['age'] = u['age']
+        t['loc1'] = u['curr_loc1']
+        t['loc2'] = u['curr_loc2']
+        df = 'img/default_female.jpg' if sex == 2 else 'img/default_male.jpg'
+        df = '%s/%s' % (conf.pic_ip, df)
+        src = p_m.get(e.id)
+        t['src'] = src if src else df
         a.append(t)
     if not f:
         s.close()
@@ -1604,20 +1660,17 @@ def participate_dating(uid, page=None, limit=None, next_=None,  s=None):
     return n, a
 
 def create_dating(name=None, uid=None, age=18, sex=0, sjt=6, dt=None,\
-        loc1=None, loc2=None, locd='未填', obj=2, num=1, fee=0, bc='无',\
-        valid_time=1, t=None):
+        loc1=None, loc2=None, locd='未填', obj=2, num=1, fee=0, bc='',\
+        valid_time=1):
     if not name or not uid or not dt:
         return None
     if not loc1 and not loc2:
         return None
     loc1 = loc1 if loc1 else ''
     loc2 = loc2 if loc2 else ''
-    if not t:
-        t = time.localtime()
-        t = time.strftime('%Y-%m-%d %H:%M:%S', t)
     d = Dating(name=name, uid=uid, age=age, sex=sex, sjt=sjt, dt=dt,\
                loc1=loc1, loc2=loc2, locd=locd, obj=obj, num=num,\
-               fee=fee, bc=bc, valid_time=valid_time, t=t)
+               fee=fee, bc=bc, valid_time=valid_time)
     s = DBSession()
     s.add(d)
     try:
@@ -1834,5 +1887,10 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
 
 
 if __name__ == '__main__':
-    r = sawother(19,12)
+    r = list_dating()
     print(r)
+'''
+    r = create_dating(name='123', uid=19, age=18, sex=1, sjt=6, dt='2018-04-06 18:30:00',\
+        loc1='四川', loc2='成都', locd='郭家桥西街', obj=2, num=1, fee=0, bc='',\
+        valid_time=1)
+'''

@@ -661,33 +661,31 @@ class ListDatingHandler(tornado.web.RequestHandler):
         limit    = self.get_argument('limit', None)
         next_    = self.get_argument('next', None)
         r = list_dating(sex=sex, age1=age1, age2=age2, loc1=loc1, loc2=loc2, page=page, limit=limit, next_=next_)
-        d = {'code':0, 'msg':'ok', data:r}
+        d = {'code':0, 'msg':'ok', 'data':r}
         d = json.dumps(d)
         self.write(d)
 
 class CreateDatingHandler(tornado.web.RequestHandler):
     def post(self):
-        name       = self.get_argument('nick_name', None)
         uid        = self.get_argument('uid', None)
         age        = int(self.get_argument('age', 18))
-        sex        = self.get_argument('sex', None)
-        sjt        = self.get_argument('subject', None)
-        dt         = self.get_argument('dtime', None)
+        sjt        = self.get_argument('sjt', None)
+        dt         = self.get_argument('dt', None)
         loc1       = self.get_argument('loc1', '')
         loc2       = self.get_argument('loc2', '')
         locd       = self.get_argument('locd', None)
-        obj        = self.get_argument('object', None)
+        obj        = self.get_argument('obj', None)
         num        = self.get_argument('num', 1)
         fee        = self.get_argument('fee', 0)
         bc         = self.get_argument('bc', '')
-        vt         = self.get_argument('valid_time', 1)
+        vt         = self.get_argument('vt', 1)
         d = {'code': 0, 'msg': 'ok'}
-        if not name or not uid or not sex or not sjt or not obj:
+        if not uid or not sjt or not obj:
             d = {'code':-1, 'msg':'参数不全'}
         if not loc1 and not loc2:
             d = {'code': -1, 'msg':'参数不全'}
         if d['code'] == 0:
-            r = create_dating(name=name, uid=uid, age=age, sex=sex, sjt=sjt,\
+            r = create_dating(uid=uid, age=age, sjt=sjt,\
                     dt=dt, loc1=loc1, loc2=loc2, locd=locd, obj=obj, num=num,\
                     fee=fee, bc=bc, valid_time=vt)
             if not r:
@@ -744,11 +742,13 @@ class SponsorDatingHandler(tornado.web.RequestHandler):
 class DetailDatingHandler(tornado.web.RequestHandler):
     def post(self):
         did      = self.get_argument('did', None)
+        uid      = self.get_argument('uid', None)
         d = {}
-        if not did:
+        if not did or not uid:
             d = {'code':-1, 'msg':'参数不全'}
         else:
-            r = detail_dating(did=did)
+            uid, did = int(uid), int(did)
+            r = detail_dating(uid=uid, did=did)
             if not r:
                 d = {'code':-1, 'msg': '参数不对'}
             else:
@@ -756,6 +756,7 @@ class DetailDatingHandler(tornado.web.RequestHandler):
         d = json.dumps(d)
         self.write(d)
         self.finish()
+
 class BaomingDatingHandler(tornado.web.RequestHandler):
     def post(self):
         did      = self.get_argument('did', None)
@@ -871,10 +872,10 @@ if __name__ == "__main__":
         ('/yanyuan_check', YanyuanCheckHandler),
         ('/list_dating', ListDatingHandler),
         ('/create_dating', CreateDatingHandler),
+        ('/detail_dating', DetailDatingHandler),
         ('/remove_dating', RemoveDatingHandler),
         ('/participate_dating', ParticipateDatingHandler),
         ('/sponsor_dating', SponsorDatingHandler),
-        ('/detail_dating', DetailDatingHandler),
         ('/baoming_dating', BaomingDatingHandler),
         ('/list_zhenghun', ListZhenghunHandler),
         ('/create_zhenghun', CreateZhenghunHandler),

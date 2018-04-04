@@ -202,7 +202,7 @@ create table if not exists dating
     valid_time tinyint unsigned not null, /*报名有效期限 单位天*/
     time_ timestamp default CURRENT_TIMESTAMP,
     scan_count int unsigned not null default 0, /*帖子浏览次数*/
-    valid_state tinyint not null default 0, /*0=帖子有效 1=被禁止*/
+    valid_state tinyint not null default 0, /*0=帖子有效 1=被禁止 2=被删除*/
     msg varchar(32) /*被禁止的原因*/
 ) engine=InnoDB, charset=utf8;
 

@@ -1539,7 +1539,8 @@ def list_dating(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=None,
         c = and_(c, Dating.loc1 == loc1)
     if loc2:
         c = and_(c, Dating.loc2 == loc2)
-   
+  
+    c = and_(c, Dating.valid_state == 0)
     f = s
     if not f:
         s = DBSession()
@@ -1605,22 +1606,28 @@ def sponsor_dating(uid=None, page=None, limit=None, next_=None,  s=None):
     f = s
     if not f:
         s = DBSession()
-    r = s.query(Dating).filter(Dating.userid == uid).limit(limit).offset(page*next_)
-    ids = [e.id for e in r]
-    ru = []
-    if ids:
-        ru = s.query(Picture).filter(Picture.id.in_(ids)).all()
-    p_m = {}
-    for e in ru:
-        p_m[e.id] = e.url0
+    c = and_(Dating.userid == uid, Dating.valid_state != 2)
+    r = s.query(Dating).filter(c).limit(limit).offset(page*next_)
+    if not r:
+        if not f:
+            s.close()
+        return 0, []
+    sex = r[0].sex
+    df = 'img/default_female.jpg' if sex == 0 else 'img/default_male.jpg'
+    rp = s.query(Picture).filter(Picture.id == uid).first()
+    if not rp:
+        df = '%s/%s' % (conf.pic_ip, df)
+    else:
+        p = rp.dic_array()
+        df = p['arr'][0]
     a = []
     for e in r:
         t = e.dic_return()
-        df = 'img/default_female.jpg' if e.sex == 0 else 'img/default_male.jpg'
-        src = df if len(p_m.get(e.userid, '')) == 0 else p_m[e.userid]
-        t['src'] = src
+        t['src'] = df
         a.append(t)
-
+    
+    if not f:
+        s.close()
     return len(a), a
 
 '''
@@ -1644,34 +1651,59 @@ def participate_dating(uid, page=None, limit=None, next_=None,  s=None):
             s.close()
         return 0, []
     ids = [e.dating_id for e in  r]
-    rd = s.query(Dating).filter(Dating.id.in_(ids)).all()
+    rd = s.query(Dating).filter(Dating.id.in_(ids)).filter(Dating.valid_state != 2).all()
     if not rd:
         if not f:
             s.close()
         return 0, []
+    ids = [e.userid for e in rd]
+    pu = s.query(Picture).filter(Picture.id.in_(ids)).all()
+    p_m = {}
+    for e in pu:
+        p_m[e.id] = e.dic_array()
+
     d_m = {}
     for e in rd:
         d_m[e.id] = e.dic_return()
+        sex = e.sex
+        df = 'img/default_female.jpg' if sex == 0 else 'img/default_male.jpg'
+        p = p_m.get(e.userid)
+        if not p:
+            df = '%s/%s' % (conf.pic_ip, df)
+        pic = p['arr'][0]
+        if not pic:
+            df = '%s/%s' % (conf.pic_ip, df)
+        d_m[e.id]['src'] = df
 
-    a = [d_m[e] for e in d_m]
+
+    a = d_m.values()
 
     if not f:
         s.close()
-    return n, a
+    return len(a), a
 
-def create_dating(name=None, uid=None, age=18, sex=0, sjt=6, dt=None,\
-        loc1=None, loc2=None, locd='未填', obj=2, num=1, fee=0, bc='',\
+def create_dating(uid=None, age=18, sjt=6, dt=None,\
+        loc1=None, loc2=None, locd='', obj=2, num=1, fee=0, bc='',\
         valid_time=1):
-    if not name or not uid or not dt:
+    if not uid or not dt:
         return None
     if not loc1 and not loc2:
         return None
+    age, sjt = int(age), int(sjt)
+    obj, num, fee = int(obj), int(num), int(fee)
+    valid_time = int(valid_time)
     loc1 = loc1 if loc1 else ''
     loc2 = loc2 if loc2 else ''
+    s = DBSession()
+    r = s.query(User).filter(User.id == uid).first()
+    if not r:
+        s.close()
+        return False
+    name = r.nick_name
+    sex =  1 if r.sex == 1 else 0
     d = Dating(name=name, uid=uid, age=age, sex=sex, sjt=sjt, dt=dt,\
                loc1=loc1, loc2=loc2, locd=locd, obj=obj, num=num,\
                fee=fee, bc=bc, valid_time=valid_time)
-    s = DBSession()
     s.add(d)
     try:
         s.commit()
@@ -1687,11 +1719,15 @@ def remove_dating(uid=None, did=None):
     if not uid or not did:
         return None
     s = DBSession()
-    r = s.query(Dating).filter(and_(Dating.id == did, Dating.userid == uid)).all()
+    r = s.query(Dating).filter(Dating.id == did).first()
     if not r:
         s.close()
         return True
-    s.query(Dating).filter(Dating.id == did).delete(synchronize_session=False)
+    if r.userid != uid:
+        s.close()
+        return True
+    r.valid_state = 2
+    r.msg = '用户删除'
     try:
         s.commit()
     except:
@@ -1702,9 +1738,9 @@ def remove_dating(uid=None, did=None):
     s.close()
     return True
 
-def detail_dating(did=None, s=None):
+def detail_dating(uid=None, did=None, s=None):
     if not did:
-        return None
+        return {}
     f = s
     if not f:
         s = DBSession()
@@ -1712,18 +1748,102 @@ def detail_dating(did=None, s=None):
     if not r:
         if not f:
             s.close()
-        return None
+        return {}
+    buchong = r.buchong
+    me = True if uid == r.userid else False
     uid1 = r.userid
-    ry = s.query(Yh_baoming).filter(Yh_baoming.dating_id == did).first()
-    bm = [e.userid for e in ry]
+    D = {}
+    u = s.query(User).filter(User.id == uid1).first()
+    if not u:
+        if not f:
+            s.close()
+        return {}
+    if len(buchong) == 0:
+        rs = s.query(Statement).filter(Statement.id == uid1).first()
+        if rs:
+            buchong = rs.motto if len(rs.content) == 0 else rs.content
+    sex = u.sex
+    df = 'img/default_female.jpg' if sex == 2 else 'img/default_male.jpg'
+    df = '%s/%s' % (conf.pic_ip, df)
     rp = s.query(Picture).filter(Picture.id == uid1).first()
-    a = r.dic_return()
-    df = 'img/default_female.jpg' if r.sex == 0 else 'img/default_male.jpg'
-    a['src'] = df if not rp.url0 else rp.url0
-    a['baoming'] = bm
+    src = df
+    if rp:
+        p = rp.dic_array()
+        src = df if len(p['arr'][0]) == 0 else p['arr'][0]
+    D['src'] = src 
+    D['nick_name'] = u.nick_name
+    D['sex'] = u.sex
+    D['sex_name'] = '男' if u.sex == 1 else '女'
+    D['age'] = u.age
+    D['height'] = u.height
+    D['loc1'] = u.curr_loc1
+    D['loc2'] = u.curr_loc2
+    D['statement'] = buchong
+    D['subject'] = r.subject
+    sjtmap = {0:'约饭',1:'电影',2:'交友',3:'聊天',
+              4:'喝酒',5:'唱歌',6:'其他'}
+    D['subject_name'] =  sjtmap.get(r.subject, '其他')
+    D['scan_count'] = r.scan_count
+    D['numbers'] = r.numbers
+    D['fee'] = r.fee
+    feemap = {0:'发起人付',1:'AA',2:'男士付款,女士免单',
+              3:'视情况而定'}
+    D['fee_name'] = feemap.get(r.fee, feemap[3])
+    D['dtime'] = str(r.dtime)
+    D['object'] = r.object1
+    objmap = {0:'男士',1:'女士', 2:'男女均可'}
+    D['object_name'] = objmap.get(r.object1, '男女均可')
+    D['loc_detail'] = r.loc_detail
+    D['buchong'] = r.buchong
+    D['time'] = str(r.time_)
+    D['valid_time'] = r.valid_time
+
+    if me: 
+        ry = s.query(Yh_baoming).filter(Yh_baoming.dating_id == did).all()
+        if not ry:
+            D['baoming'] = []
+        else:
+            y_u = {}
+            for e in ry:
+                y_u[e.userid] = e
+            ids = y_u.keys()
+            ru = s.query(User).filter(User.id.in_(ids)).all()
+            u_m = {}
+            for e in ru:
+                u_m[e.id] = e
+            rs = s.query(Statement).filter(Statement.id.in_(ids)).all()
+            rs_m = {}
+            for e in rs:
+                rs_m[e.id] = e
+            rp = s.query(Picture).filter(Picture.id.in_(ids)).all()
+            p_m = {}
+            for e in rp:
+                sex = u_m[e.id].sex
+                df = 'img/default_female.jpg' if sex == 2 else 'img/default_male.jpg'
+                df = '%s/%s' % (conf.pic_ip, df)
+                p = e.dic_array()
+                src = p['arr'][0]
+                src = df if len(src) == 0 else src
+                p_m[e.id] = src
+            B = []
+            for e in ru:
+                st = rs_m[e.id].statment
+                if not st:
+                    st = rs_m[e.id].motto
+                st = '%s...'%st[:40]
+                name = '新用户%s' % e.mobile[-4:] if not e.nick_name else e.nick_name
+                src = p_m[e.id]
+                sex = e.sex
+                sex_name = '男' if sex == 1 else '女'
+                tm = str(y_u[e.id].time_)
+                b = {'nick_name': name, 'src': src, 'sex': sex,
+                     'sex_name': sex_name, 'time': tm, 'age': age,
+                     'height': height, 'degree': degree, 'statment': st}
+                B.append(b)
+            D['baoming'] = B
     if not f:
         s.close()
-    return a
+    return D
 
 def baoming_dating(uid=None, did=None, s=None):
     if not uid or not did:
@@ -1887,7 +2007,7 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
 
 
 if __name__ == '__main__':
-    r = list_dating()
+    r = detail_dating(19, 1)
     print(r)
 '''
     r = create_dating(name='123', uid=19, age=18, sex=1, sjt=6, dt='2018-04-06 18:30:00',\

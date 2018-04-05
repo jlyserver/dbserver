@@ -742,7 +742,7 @@ class SponsorDatingHandler(tornado.web.RequestHandler):
 class DetailDatingHandler(tornado.web.RequestHandler):
     def post(self):
         did      = self.get_argument('did', None)
-        uid      = self.get_argument('uid', None)
+        uid      = self.get_argument('cuid', None)
         d = {}
         if not did or not uid:
             d = {'code':-1, 'msg':'参数不全'}

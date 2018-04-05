@@ -29,8 +29,8 @@ new_female=4
 isee_limit=50
 seeme_limit=50
 icare_limit=100
-dating_page=4
-dating_limit=4
+dating_page=6
+dating_limit=6
 freq_conn=6
 
 [digest]

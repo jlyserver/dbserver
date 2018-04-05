@@ -1402,6 +1402,11 @@ def latest_conn(uid=None, s=None):
         if e.to_id != uid:
             e_m[e.to_id] = 1
     ids = e_m.keys()[:conf.toffset_freq_conn]
+    if not ids:
+        if not f:
+            s.close()
+        return 0, []
+
     r = s.query(User).filter(User.id.in_(ids)).all()
     u_m = {}
     for e in r:
@@ -1512,6 +1517,11 @@ def del_email(uid=None, eid=None, s=None):
     return True
 
 def list_dating(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=None, limit=None, next_=None, s=None):
+    if loc1:
+        if loc1[:2] in ['北京','上海', '天津', '重庆']:
+            loc2 = None
+    if loc2:
+        loc1 = None
     page = conf.toffset_dating_page if not page else int(page)
     limit = conf.toffset_dating_limit if not limit else int(limit)
     next_ = 0 if not next_ else int(next_)
@@ -1545,11 +1555,11 @@ def list_dating(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=None,
     if not f:
         s = DBSession()
     n = s.query(Dating).filter(c).count()
-    r = s.query(Dating).filter(c).limit(limit).offset(page*next_)
+    r = s.query(Dating).filter(c).order_by(desc(Dating.time_)).limit(limit).offset(page*next_)
     if not r:
         if not f:
             s.close()
-        return n, []
+        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
     tmp = {}
     for e in r:
         tmp[e.userid] = 1
@@ -1590,7 +1600,7 @@ def list_dating(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=None,
         a.append(t)
     if not f:
         s.close()
-    return n, a
+    return {'page':page, 'arr':a, 'total': n, 'next': next_}
 
 '''
 我发起的约会
@@ -1645,7 +1655,7 @@ def participate_dating(uid, page=None, limit=None, next_=None,  s=None):
     f = s
     if not f:
         s = DBSession()
-    r = s.query(Yh_baoming).filter(Yh_baoming.userid == uid).limit(limit).offset(page*next_)
+    r = s.query(Yh_baoming).filter(Yh_baoming.userid == uid).order_by(desc(Yh_baoming.time_)).limit(limit).offset(page*next_)
     if not r:
         if not f:
             s.close()
@@ -1739,7 +1749,7 @@ def remove_dating(uid=None, did=None):
     return True
 
 def detail_dating(uid=None, did=None, s=None):
-    if not did:
+    if not uid or not did:
         return {}
     f = s
     if not f:
@@ -1783,7 +1793,8 @@ def detail_dating(uid=None, did=None, s=None):
     sjtmap = {0:'约饭',1:'电影',2:'交友',3:'聊天',
               4:'喝酒',5:'唱歌',6:'其他'}
     D['subject_name'] =  sjtmap.get(r.subject, '其他')
-    D['scan_count'] = r.scan_count
+    D['scan_count'] = r.scan_count + 1
+    r.scan_count = r.scan_count + 1
     D['numbers'] = r.numbers
     D['fee'] = r.fee
     feemap = {0:'发起人付',1:'AA',2:'男士付款,女士免单',
@@ -1797,8 +1808,14 @@ def detail_dating(uid=None, did=None, s=None):
     D['buchong'] = r.buchong
     D['time'] = str(r.time_)
     D['valid_time'] = r.valid_time
-
-    if me: 
+    s.commit()
+    if not me: 
+        D['me'] = 0
+        c = and_(Yh_baoming.dating_id == did, Yh_baoming.userid == uid)
+        ry = s.query(Yh_baoming).filter(c).all()
+        D['already'] = 1 if ry else 0
+    else:
+        D['me'] = 1
         ry = s.query(Yh_baoming).filter(Yh_baoming.dating_id == did).all()
         if not ry:
             D['baoming'] = []
@@ -1826,6 +1843,8 @@ def detail_dating(uid=None, did=None, s=None):
                 src = df if len(src) == 0 else src
                 p_m[e.id] = src
             B = []
+            degree_map = {0:'保密',1:'高中及以下',2:'中专/大专',3:'本科',
+                          4:'研究生',5:'博士及博士后'}
             for e in ru:
                 st = rs_m[e.id].statment
                 if not st:
@@ -1836,9 +1855,12 @@ def detail_dating(uid=None, did=None, s=None):
                 sex = e.sex
                 sex_name = '男' if sex == 1 else '女'
                 tm = str(y_u[e.id].time_)
+                degree = u_m[e.id].degree
+                degree_name = degree_map.get(degree, '保密')
                 b = {'nick_name': name, 'src': src, 'sex': sex,
                      'sex_name': sex_name, 'time': tm, 'age': age,
-                     'height': height, 'degree': degree, 'statment': st}
+                     'height': height, 'degree': degree,
+                     'degree_name': degree_name, 'statment': st}
                 B.append(b)
             D['baoming'] = B
     if not f:
@@ -1857,6 +1879,12 @@ def baoming_dating(uid=None, did=None, s=None):
             s.close()
         return None
     if r.userid == uid:
+        if not f:
+            s.close()
+        return None
+    c = and_(Yh_baoming.dating_id == did, Yh_baoming.userid == uid)
+    ry = s.query(Yh_baoming).filter(c).first()
+    if ry:
         if not f:
             s.close()
         return None
@@ -1918,8 +1946,11 @@ def list_zhenghun(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=Non
     for e in rp:
         p_m[e.id] = e.url0
     a = []
+    sjtmap = {0:'约饭',1:'电影',2:'交友',3:'聊天',
+              4:'喝酒',5:'唱歌',6:'其他'}
     for e in r:
         t = e.dic_return()
+        t['subject_name'] = sjtmap.get(e.subject, '其他')
         df = 'img/default_female.jpg' if e.sex == 0 else 'img/default_male.jpg'
         src = df if len(p_m.get(e.userid,'')) == 0 else p_m[e.userid]
         t['src'] = src
@@ -2007,7 +2038,8 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
 
 
 if __name__ == '__main__':
-    r = detail_dating(19, 1)
+    r = list_dating()
+#   r = detail_dating(19, 1)
     print(r)
 '''
     r = create_dating(name='123', uid=19, age=18, sex=1, sjt=6, dt='2018-04-06 18:30:00',\

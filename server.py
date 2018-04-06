@@ -717,25 +717,23 @@ class ParticipateDatingHandler(tornado.web.RequestHandler):
         if not uid:
             d = {'code': -1, 'msg': '参数不正确'}
         if d['code'] == 0:
-            n, r = participate_dating(uid, limit=limit, page=page, next_=next_)
-            if n >= 0:
-                d = {'code': 0, 'msg':'ok', 'data':{'num':n, 'data':r}}
+            r = participate_dating(uid, limit=limit, page=page, next_=next_)
+            d = {'code': 0, 'msg':'ok', 'data':r}
         d = json.dumps(d)
         self.write(d)
 
 class SponsorDatingHandler(tornado.web.RequestHandler):
     def post(self):
         uid   = self.get_argument('uid', None)
-        limit = int(self.get_argument('limit', 0))
-        page  = int(self.get_argument('page', 0))
-        next_ = int(self.get_argument('next', 0))
+        limit = self.get_argument('limit', None)
+        page  = self.get_argument('page', None)
+        next_ = self.get_argument('next', None)
         d = {'code': 0, 'msg': 'ok'}
         if not uid:
             d = {'code': -1, 'msg': '参数不正确'}
         if d['code'] == 0:
-            n, r = sponsor_dating(uid, limit=limit, page=page, next_=next_)
-            if n >= 0:
-                d = {'code': 0, 'msg':'ok', 'data':{'num':n, 'data':r}}
+            r = sponsor_dating(uid, limit=limit, page=page, next_=next_)
+            d = {'code': 0, 'msg':'ok', 'data':r}
         d = json.dumps(d)
         self.write(d)
 

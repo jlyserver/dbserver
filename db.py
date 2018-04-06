@@ -1277,6 +1277,10 @@ def __mail(kind=1, uid=None, page=None, next_=None, s=None):
         for e in r:
             m_ids[e.to_id] = 1
     ids = m_ids.keys()
+    if not ids:
+        if not f:
+            s.close()
+        return []
     ru = s.query(User).filter(User.id.in_(ids)).all()
     if not ru:
         if not f:
@@ -1587,6 +1591,86 @@ def list_dating(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=None,
             continue
         sex = u['sex']
         t = e.dic_return()
+        sjtmap = {0:'约饭',1:'电影',2:'交友',3:'聊天',
+                  4:'喝酒',5:'唱歌',6:'其他'}
+        t['subject_name'] =  sjtmap.get(e.subject, '其他')
+        feemap = {0:'发起人付',1:'AA',2:'男士付款,女士免单',
+              3:'视情况而定'}
+        objmap = {0:'男士',1:'女士', 2:'男女均可'}
+        t['object_name'] = objmap.get(e.object1, '男女均可')
+        t['fee_name'] = feemap.get(e.fee, feemap[3])
+        t['nick_name'] = u['nick_name']
+        t['sex'] = sex
+        t['sex_name'] = '男' if sex == 1 else '女'
+        t['age'] = u['age']
+        t['loc1'] = u['curr_loc1']
+        t['loc2'] = u['curr_loc2']
+        df = 'img/default_female.jpg' if sex == 2 else 'img/default_male.jpg'
+        df = '%s/%s' % (conf.pic_ip, df)
+        src = p_m.get(e.userid)
+        t['src'] = src if src else df
+        a.append(t)
+    if not f:
+        s.close()
+    return {'page':page, 'arr':a, 'total': n, 'next': next_}
+
+'''
+参与的约会
+uid: 报名参加人的id
+return: 帖子总数, 帖子结果
+'''
+def participate_dating(uid=None, page=None, limit=None, next_=None,  s=None):
+    if not uid or not uid.isdigit():
+        return 0, None
+    uid = int(uid)
+    page = conf.toffset_dating_page if not page else int(page)
+    limit = conf.toffset_dating_limit if not limit else int(limit)
+    next_ = 0 if not next_ else int(next_)
+    
+    f = s
+    if not f:
+        s = DBSession()
+    c = and_(Dating.userid == uid, Dating.valid_state == 0)
+    r = s.query(Dating).filter(c).order_by(desc(Dating.time_)).limit(limit).offset(page*next_)
+    if not r:
+        if not f:
+            s.close()
+        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
+    tmp = {}
+    for e in r:
+        tmp[e.userid] = 1
+    ids = tmp.keys()
+    
+    ru = []
+    if ids:
+        ru = s.query(User).filter(User.id.in_(ids)).all()
+    p_u = {}
+    for e in ru:
+        p_u[e.id] = e.dic_return()
+
+    rp = []
+    if ids:
+        rp = s.query(Picture).filter(Picture.id.in_(ids)).all()
+    p_m = {}
+    for e in rp:
+        p = e.dic_array()
+        p_m[e.id] = p['arr'][0]
+    a = []
+    for e in r:
+        u = p_u.get(e.userid)
+        if not u:
+            n = n-1
+            continue
+        sex = u['sex']
+        t = e.dic_return()
+        sjtmap = {0:'约饭',1:'电影',2:'交友',3:'聊天',
+                  4:'喝酒',5:'唱歌',6:'其他'}
+        t['subject_name'] =  sjtmap.get(e.subject, '其他')
+        feemap = {0:'发起人付',1:'AA',2:'男士付款,女士免单',
+              3:'视情况而定'}
+        objmap = {0:'男士',1:'女士', 2:'男女均可'}
+        t['object_name'] = objmap.get(e.object1, '男女均可')
+        t['fee_name'] = feemap.get(e.fee, feemap[3])
         t['nick_name'] = u['nick_name']
         t['sex'] = sex
         t['sex_name'] = '男' if sex == 1 else '女'
@@ -1607,38 +1691,72 @@ def list_dating(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=None,
 return:  结果个数, 结果列表
 '''
 def sponsor_dating(uid=None, page=None, limit=None, next_=None,  s=None):
-    if not uid or not uid.isdigit():
-        return None, None
     page = conf.toffset_dating_page if not page else int(page)
     limit = conf.toffset_dating_limit if not limit else int(limit)
     next_ = 0 if not next_ else int(next_)
+
+    if not uid or not uid.isdigit():
+        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
    
     f = s
     if not f:
         s = DBSession()
     c = and_(Dating.userid == uid, Dating.valid_state != 2)
-    r = s.query(Dating).filter(c).limit(limit).offset(page*next_)
+    n = s.query(Dating).filter(c).order_by(desc(Dating.time_)).count()
+    r = s.query(Dating).filter(c).order_by(desc(Dating.time_)).limit(limit).offset(page*next_)
     if not r:
         if not f:
             s.close()
-        return 0, []
-    sex = r[0].sex
-    df = 'img/default_female.jpg' if sex == 0 else 'img/default_male.jpg'
-    rp = s.query(Picture).filter(Picture.id == uid).first()
-    if not rp:
-        df = '%s/%s' % (conf.pic_ip, df)
-    else:
-        p = rp.dic_array()
-        df = p['arr'][0]
+        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
+    tmp = {}
+    for e in r:
+        tmp[e.userid] = 1
+    ids = tmp.keys()
+    
+    ru = []
+    if ids:
+        ru = s.query(User).filter(User.id.in_(ids)).all()
+    p_u = {}
+    for e in ru:
+        p_u[e.id] = e.dic_return()
+
+    rp = []
+    if ids:
+        rp = s.query(Picture).filter(Picture.id.in_(ids)).all()
+    p_m = {}
+    for e in rp:
+        p = e.dic_array()
+        p_m[e.id] = p['arr'][0]
     a = []
     for e in r:
+        u = p_u.get(e.userid)
+        if not u:
+            n = n-1
+            continue
+        sex = u['sex']
         t = e.dic_return()
-        t['src'] = df
+        sjtmap = {0:'约饭',1:'电影',2:'交友',3:'聊天',
+                  4:'喝酒',5:'唱歌',6:'其他'}
+        t['subject_name'] =  sjtmap.get(e.subject, '其他')
+        feemap = {0:'发起人付',1:'AA',2:'男士付款,女士免单',
+              3:'视情况而定'}
+        objmap = {0:'男士',1:'女士', 2:'男女均可'}
+        t['object_name'] = objmap.get(e.object1, '男女均可')
+        t['fee_name'] = feemap.get(e.fee, feemap[3])
+        t['nick_name'] = u['nick_name']
+        t['sex'] = sex
+        t['sex_name'] = '男' if sex == 1 else '女'
+        t['age'] = u['age']
+        t['loc1'] = u['curr_loc1']
+        t['loc2'] = u['curr_loc2']
+        df = 'img/default_female.jpg' if sex == 2 else 'img/default_male.jpg'
+        df = '%s/%s' % (conf.pic_ip, df)
+        src = p_m.get(e.userid)
+        t['src'] = src if src else df
         a.append(t)
-    
     if not f:
         s.close()
-    return len(a), a
+    return {'page':page, 'arr':a, 'total': n, 'next': next_}
 
 '''
 参与的约会
@@ -1646,26 +1764,27 @@ uid: 报名参加人的id
 return: 帖子总数, 帖子结果
 '''
 def participate_dating(uid, page=None, limit=None, next_=None,  s=None):
-    if not uid or not uid.isdigit():
-        return 0, None
     page = conf.toffset_dating_page if not page else int(page)
     limit = conf.toffset_dating_limit if not limit else int(limit)
     next_ = 0 if not next_ else int(next_)
+    if not uid or not uid.isdigit():
+        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
     
     f = s
     if not f:
         s = DBSession()
+    n = s.query(Yh_baoming).filter(Yh_baoming.userid == uid).count()
     r = s.query(Yh_baoming).filter(Yh_baoming.userid == uid).order_by(desc(Yh_baoming.time_)).limit(limit).offset(page*next_)
     if not r:
         if not f:
             s.close()
-        return 0, []
+        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
     ids = [e.dating_id for e in  r]
     rd = s.query(Dating).filter(Dating.id.in_(ids)).filter(Dating.valid_state != 2).all()
     if not rd:
         if not f:
             s.close()
-        return 0, []
+        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
     ids = [e.userid for e in rd]
     pu = s.query(Picture).filter(Picture.id.in_(ids)).all()
     p_m = {}
@@ -1676,21 +1795,23 @@ def participate_dating(uid, page=None, limit=None, next_=None,  s=None):
     for e in rd:
         d_m[e.id] = e.dic_return()
         sex = e.sex
+        sex_name = '女' if sex == 0 else '男'
+        d_m[e.id]['sex_name'] = sex_name
         df = 'img/default_female.jpg' if sex == 0 else 'img/default_male.jpg'
+        src = ''
         p = p_m.get(e.userid)
         if not p:
-            df = '%s/%s' % (conf.pic_ip, df)
-        pic = p['arr'][0]
-        if not pic:
-            df = '%s/%s' % (conf.pic_ip, df)
-        d_m[e.id]['src'] = df
+            src = '%s/%s' % (conf.pic_ip, df)
+        else:
+            src = p['arr'][0]
+        d_m[e.id]['src'] = src
 
 
     a = d_m.values()
 
     if not f:
         s.close()
-    return len(a), a
+    return {'page':page, 'arr':a, 'total': n, 'next': next_}
 
 def create_dating(uid=None, age=18, sjt=6, dt=None,\
         loc1=None, loc2=None, locd='', obj=2, num=1, fee=0, bc='',\
@@ -1846,7 +1967,7 @@ def detail_dating(uid=None, did=None, s=None):
             degree_map = {0:'保密',1:'高中及以下',2:'中专/大专',3:'本科',
                           4:'研究生',5:'博士及博士后'}
             for e in ru:
-                st = rs_m[e.id].statment
+                st = rs_m[e.id].content
                 if not st:
                     st = rs_m[e.id].motto
                 st = '%s...'%st[:40]
@@ -1859,8 +1980,8 @@ def detail_dating(uid=None, did=None, s=None):
                 degree_name = degree_map.get(degree, '保密')
                 b = {'nick_name': name, 'src': src, 'sex': sex,
                      'sex_name': sex_name, 'time': tm, 'age': age,
-                     'height': height, 'degree': degree,
-                     'degree_name': degree_name, 'statment': st}
+                     'height': height, 'degree': degree, 'id': e.id,
+                     'degree_name': degree_name, 'statement': st}
                 B.append(b)
             D['baoming'] = B
     if not f:
@@ -2038,8 +2159,7 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
 
 
 if __name__ == '__main__':
-    r = list_dating()
-#   r = detail_dating(19, 1)
+    r = list_dating(loc1='四川', loc2='成都')
     print(r)
 '''
     r = create_dating(name='123', uid=19, age=18, sex=1, sjt=6, dt='2018-04-06 18:30:00',\

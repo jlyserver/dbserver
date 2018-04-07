@@ -1977,6 +1977,8 @@ def detail_dating(uid=None, did=None, s=None):
                 sex_name = '男' if sex == 1 else '女'
                 tm = str(y_u[e.id].time_)
                 degree = u_m[e.id].degree
+                age = e.age
+                height = e.height
                 degree_name = degree_map.get(degree, '保密')
                 b = {'nick_name': name, 'src': src, 'sex': sex,
                      'sex_name': sex_name, 'time': tm, 'age': age,

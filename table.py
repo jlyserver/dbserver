@@ -547,15 +547,19 @@ class Dating(Base):
     valid_state  = Column(Integer)
     msg          = Column(String(32))
     def dic_return(self):
+        t = str(self.time_)
+        t = t.replace('-', '/')
+        dt = str(self.dtime)
+        dt = dt.replace('-', '/')
         return {'id': self.id,   'uid': self.userid, 'age': self.age, 
                 'sex': self.sex, 'scan_count': self.scan_count,
-                'subject': self.subject, 'dtime': str(self.dtime),
+                'subject': self.subject, 'dtime': dt,
                 'loc1': self.loc1, 'loc2': self.loc2,
                 'loc_detail': self.loc_detail, 'object': self.object1,
                 'numbers': self.numbers, 'fee': self.fee,
                 'buchong': self.buchong, 'valid_time': self.valid_time,
                 'valid_state': self.valid_state, 'msg': self.msg,
-                'time': str(self.time_), 'nick_name': self.nick_name}
+                'time': t, 'nick_name': self.nick_name}
 
 #################################################################
 

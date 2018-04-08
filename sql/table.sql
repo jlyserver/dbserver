@@ -221,6 +221,7 @@ create table if not exists zhenghun
 (
     id int unsigned primary key auto_increment,
     userid  int unsigned not null,  /*发起人id*/
+    nick_name varchar(16),          /*发起人昵称*/
     age  tinyint unsigned not null, /*发起人年龄*/
     sex  tinyint unsigned not null, /*发起人性别 0=女 1=男*/
     loc1  varchar(8) not null,     /*征婚地点 省(直辖市)*/
@@ -230,6 +231,7 @@ create table if not exists zhenghun
     title varchar(64), /*帖子标题*/
     content varchar(800), /*帖子内容*/
     object1 tinyint not null, /*=0征GG =1征MM*/
-    valid_state tinyint not null default 0, /*0=帖子有效 1=被禁止*/
+    scan_count int unsigned default 0, /*浏览次数*/
+    valid_state tinyint not null default 0, /*0=帖子有效 1=被禁止 2=用户删除*/
     msg varchar(32) /*被禁止的原因*/
 ) engine=InnoDB, charset=utf8;

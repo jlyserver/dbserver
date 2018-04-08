@@ -31,6 +31,9 @@ class Picconf():
         self.toffset_dating_page= p.getint('toffset', 'dating_page')
         self.toffset_dating_limit = p.getint('toffset', 'dating_limit')
         self.toffset_freq_conn  = p.getint('toffset', 'freq_conn')
+        self.toffset_zhenghun_page = p.getint('toffset', 'zhenghun_page')
+        self.toffset_zhenghun_limit= p.getint('toffset', 'zhenghun_limit')
+        self.toffset_look_limit  = p.getint('toffset', 'look_limit')
 
         self.digest_salt     = p.get('digest', 'digest_salt')
 

@@ -601,6 +601,7 @@ class Zhenghun(Base):
         self.title    = title
         self.content  = cnt
         self.object1  = obj1
+        self.scan_count = 0
         self.valid_state = v_st
         self.msg      = msg
         if not t:
@@ -621,6 +622,7 @@ class Zhenghun(Base):
     title         = Column(String(64))
     content       = Column(String(800))
     object1       = Column(Integer)
+    scan_count    = Column(Integer)
     valid_state   = Column(Integer)
     msg           = Column(String(32))
     def dic_return(self):
@@ -629,6 +631,7 @@ class Zhenghun(Base):
                 'loc1': self.loc1,  'loc2': self.loc2,
                 'valid_day': self.valid_day,  'title': self.title,
                 'content': self.content,  'object': self.object1,
+                'scan_count': self.scan_count, 
                 'valid_state': self.valid_state, 'msg': self.msg,
                 'time': str(self.time_), 'nick_name': self.nick_name}
 

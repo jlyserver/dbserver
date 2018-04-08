@@ -741,6 +741,20 @@ def sawother(cuid=None, uid=None, s=None):
     f = s
     if not f:
         s = DBSession()
+    cuid, uid = int(cuid), int(uid)
+    if uid != cuid:
+        print('uid=%d cuid=%d' % (uid, cuid))
+        rl = s.query(Look).filter(Look.from_id == cuid, Look.to_id == uid).order_by(desc(Look.time_)).all()
+        if rl:
+            ids = []
+            for i in xrange(len(rl)):
+                if i > conf.toffset_look_limit :
+                    ids.append(rl[i].id)
+            if ids:
+                s.query(Look).filter(Look.id.in_(ids)).delete(synchronize_session=False)
+        l = Look(id_=0, f=cuid, to=uid)
+        s.add(l)
+        s.commit()
     c = and_(Consume_record.userid == cuid, Consume_record.objid == uid)
     c = and_(c, Consume_record.way != 3, Consume_record.way != 4)
     r = s.query(Consume_record).filter(c).all()
@@ -1534,9 +1548,9 @@ def list_dating(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=None,
         sex = int(sex)
     if sex and sex in [0, 1]:
         c = and_(c, Dating.sex == sex)
-    if age1 and age1.isdigit():
+    if age1:
         age1 = int(age1)
-    if age2 and age2.isdigit():
+    if age2:
         age2 = int(age2)
     if age1:
         if age2:
@@ -1608,78 +1622,6 @@ def list_dating(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=None,
         df = 'img/default_female.jpg' if sex == 2 else 'img/default_male.jpg'
         df = '%s/%s' % (conf.pic_ip, df)
         src = p_m.get(e.userid)
-        t['src'] = src if src else df
-        a.append(t)
-    if not f:
-        s.close()
-    return {'page':page, 'arr':a, 'total': n, 'next': next_}
-
-'''
-参与的约会
-uid: 报名参加人的id
-return: 帖子总数, 帖子结果
-'''
-def participate_dating(uid=None, page=None, limit=None, next_=None,  s=None):
-    if not uid or not uid.isdigit():
-        return 0, None
-    uid = int(uid)
-    page = conf.toffset_dating_page if not page else int(page)
-    limit = conf.toffset_dating_limit if not limit else int(limit)
-    next_ = 0 if not next_ else int(next_)
-    
-    f = s
-    if not f:
-        s = DBSession()
-    c = and_(Dating.userid == uid, Dating.valid_state == 0)
-    r = s.query(Dating).filter(c).order_by(desc(Dating.time_)).limit(limit).offset(page*next_)
-    if not r:
-        if not f:
-            s.close()
-        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
-    tmp = {}
-    for e in r:
-        tmp[e.userid] = 1
-    ids = tmp.keys()
-    
-    ru = []
-    if ids:
-        ru = s.query(User).filter(User.id.in_(ids)).all()
-    p_u = {}
-    for e in ru:
-        p_u[e.id] = e.dic_return()
-
-    rp = []
-    if ids:
-        rp = s.query(Picture).filter(Picture.id.in_(ids)).all()
-    p_m = {}
-    for e in rp:
-        p = e.dic_array()
-        p_m[e.id] = p['arr'][0]
-    a = []
-    for e in r:
-        u = p_u.get(e.userid)
-        if not u:
-            n = n-1
-            continue
-        sex = u['sex']
-        t = e.dic_return()
-        sjtmap = {0:'约饭',1:'电影',2:'交友',3:'聊天',
-                  4:'喝酒',5:'唱歌',6:'其他'}
-        t['subject_name'] =  sjtmap.get(e.subject, '其他')
-        feemap = {0:'发起人付',1:'AA',2:'男士付款,女士免单',
-              3:'视情况而定'}
-        objmap = {0:'男士',1:'女士', 2:'男女均可'}
-        t['object_name'] = objmap.get(e.object1, '男女均可')
-        t['fee_name'] = feemap.get(e.fee, feemap[3])
-        t['nick_name'] = u['nick_name']
-        t['sex'] = sex
-        t['sex_name'] = '男' if sex == 1 else '女'
-        t['age'] = u['age']
-        t['loc1'] = u['curr_loc1']
-        t['loc2'] = u['curr_loc2']
-        df = 'img/default_female.jpg' if sex == 2 else 'img/default_male.jpg'
-        df = '%s/%s' % (conf.pic_ip, df)
-        src = p_m.get(e.id)
         t['src'] = src if src else df
         a.append(t)
     if not f:
@@ -1800,7 +1742,7 @@ def participate_dating(uid, page=None, limit=None, next_=None,  s=None):
         df = 'img/default_female.jpg' if sex == 0 else 'img/default_male.jpg'
         src = ''
         p = p_m.get(e.userid)
-        if not p:
+        if not p or not p['arr'][0]:
             src = '%s/%s' % (conf.pic_ip, df)
         else:
             src = p['arr'][0]
@@ -2025,15 +1967,18 @@ def baoming_dating(uid=None, did=None, s=None):
     return True
 
 def list_zhenghun(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=None, limit=None, next_=None, s=None):
-    page = conf.toffset_dating_page if not page else int(page)
-    limit = conf.toffset_dating_limit if not limit else int(limit)
+    page = conf.toffset_zhenghun_page if not page else int(page)
+    limit = conf.toffset_zhenghun_limit if not limit else int(limit)
     next_ = 0 if not next_ else int(next_)
     c = True
-    if sex and sex in ['0', '1']:
+    if sex:
+        sex = int(sex)
+    if sex and sex in [0, 1]:
         c = and_(c, Zhenghun.sex == sex)
-    if age1 and age1.isdigit():
+
+    if age1:
         age1 = int(age1)
-    if age2 and age2.isdigit():
+    if age2:
         age2 = int(age2)
     if age1:
         if age2:
@@ -2054,54 +1999,100 @@ def list_zhenghun(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=Non
     f = s
     if not f:
         s = DBSession()
-    r = s.query(Zhenghun).filter(c).limit(limit).offset(page*next_).order_by(desc(Zhenghun.time_))
+    n = s.query(Zhenghun).filter(c).count()
+    r = s.query(Zhenghun).filter(c).order_by(desc(Zhenghun.time_)).limit(limit).offset(page*next_)
     if not r:
         if not f:
             s.close()
-        return 0, []
-    ids = [e.userid for e in r]
-    rp = s.query(Picture).filter(Picture.id.in_(ids)).all()
-    if not rp:
-        if not f:
-            s.close()
-        return 0, []
+        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
+    tmp = {}
+    for e in r:
+        tmp[e.userid] = 1
+    ids = tmp.keys()
+    ru = []
+    if ids:
+        ru = s.query(User).filter(User.id.in_(ids)).all()
+    p_u = {}
+    for e in ru:
+        p_u[e.id] = e.dic_return()
+
+    rp = []
+    if ids:
+        rp = s.query(Picture).filter(Picture.id.in_(ids)).all()
     p_m = {}
     for e in rp:
-        p_m[e.id] = e.url0
+        p = e.dic_array()
+        p_m[e.id] = p['arr'][0]
     a = []
-    sjtmap = {0:'约饭',1:'电影',2:'交友',3:'聊天',
-              4:'喝酒',5:'唱歌',6:'其他'}
+
     for e in r:
+        u = p_u.get(e.userid)
+        if not u:
+            n = n-1
+            continue
+        sex = u['sex']
         t = e.dic_return()
-        t['subject_name'] = sjtmap.get(e.subject, '其他')
-        df = 'img/default_female.jpg' if e.sex == 0 else 'img/default_male.jpg'
-        src = df if len(p_m.get(e.userid,'')) == 0 else p_m[e.userid]
-        t['src'] = src
+        t['object_name'] = '征MM' if e.object1 == 0 else '征GG'
+        t['nick_name'] = u['nick_name']
+        t['sex'] = sex
+        t['sex_name'] = '男' if sex == 1 else '女'
+        t['age'] = u['age']
+        df = 'img/default_female.jpg' if sex == 2 else 'img/default_male.jpg'
+        df = '%s/%s' % (conf.pic_ip, df)
+        src = p_m.get(e.userid)
+        t['src'] = src if src else df
         a.append(t)
     if not f:
         s.close()
-    n = len(a)
-    return n, a
+    return {'page':page, 'arr':a, 'total': n, 'next': next_}
 
-def create_zhenghun(uid=None, name=None, age=None, sex=None, loc1=None, \
+
+def create_zhenghun(uid=None, loc1=None, \
         loc2=None, v_d=1, title=None, cnt=None, obj1=None):
-    if not uid or not name or not age or not sex or not title or not obj1:
-        return None
+    err = {'code': -1, 'msg': '参数不对'}
+    if not uid or not title or not obj1 or not v_d:
+        return err
     if not loc1 and not loc2:
-        return None
+        return err
+    if not cnt:
+        cnt = ''
+    if not loc1:
+        loc1 = ''
+    if not loc2:
+        loc2 = ''
     s = DBSession()
-    z = Zhenghun(0, uid, name, age, sex, loc1, loc2,
-                 None, v_d, title, cnt, obj1)
+    ru = s.query(User).filter(User.id == uid).first()
+    if not ru:
+        s.close()
+        return err
+    name = ru.nick_name if ru.nick_name else '新用户%s'%ru.mobile[-4:]
+    age  = ru.age
+    sex  = 1 if ru.sex == 1 else 0
+
+    ra = s.query(User_account).filter(User_account.id == uid).first()
+    if not ra:
+        s.close()
+        return err
+    if ra.free >= conf.zhenghun_fee:
+        ra.free = ra.free - conf.zhenghun_fee
+    elif ra.num >= conf.zhenghun_fee:
+        ra.num = ra.num - conf.zhenghun_fee
+    else:
+        s.close()
+        return {'code': -1, 'msg': '余额不足'}
+
+    z = Zhenghun(id_=0, uid=uid, name=name, age=age, sex=sex, loc1=loc1,\
+                 loc2=loc2, v_d=v_d, title=title, cnt=cnt, obj1=obj1)
     s.add(z)
     try:
         s.commit()
     except:
-        msg = 'zhenghun create: failed uid=%s name=%s age=%s sex=%s loc1=%s loc2=%s valid_time=%d title=%s content=%s object1=%d' % (uid, name, age, sex, loc1, loc2, v_d, title, content, object1)
+        msg = 'zhenghun create: failed uid=%s name=%s age=%s sex=%s loc1=%s loc2=%s valid_time=%d title=%s content=%s object1=%d' % (uid, name, age, sex, loc1, loc2, v_d, title, cnt, obj1)
         print(msg)
         s.close()
-        return None
+        return err
     s.close()
-    return True
+    return {'code': 0, 'msg': 'ok'}
 
 def remove_zhenghun(zid=None):
     if not zid:
@@ -2118,34 +2109,125 @@ def remove_zhenghun(zid=None):
     return True
 
 def sponsor_zhenghun(uid=None, page=None, limit=None, next_=None,  s=None):
-    if not uid or not uid.isdigit():
-        return None, None
+    if not uid:
+        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
 
-    page = conf.toffset_zh_page if not page else int(page)
-    limit = conf.toffset_zh_limit if not limit else int(limit)
+    page = conf.toffset_zhenghun_page if not page else int(page)
+    limit = conf.toffset_zhenghun_limit if not limit else int(limit)
     next_ = 0 if not next_ else int(next_)
 
     f = s
     if not f:
         s = DBSession()
-    r = s.query(Zhenghun).filter(Zhenghun.userid == uid).limit(limit).offset(page*next_)
+    n = s.query(Zhenghun).filter(Zhenghun.userid == uid).count()
+    r = s.query(Zhenghun).filter(Zhenghun.userid == uid).order_by(desc(Zhenghun.time_)).limit(limit).offset(page*next_)
     if not r:
         if not f:
             s.close()
-        return 0, []
-    rp = s.query(Picture).filter(Picture.id == uid).first()
-    sex = r.sex
-    src = 'img/default_female.jpg' if sex == 0 else 'img/default_male.jpg'
-    if rp and len(rp.url0) > 0:
-        src = rp.url0
-    a = []
+        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
+
+    tmp = {}
     for e in r:
+        tmp[e.userid] = 1
+    ids = tmp.keys()
+    ru = []
+    if ids:
+        ru = s.query(User).filter(User.id.in_(ids)).all()
+    p_u = {}
+    for e in ru:
+        p_u[e.id] = e.dic_return()
+    rp = []
+    if ids:
+        rp = s.query(Picture).filter(Picture.id.in_(ids)).all()
+    p_m = {}
+    for e in rp:
+        p = e.dic_array()
+        p_m[e.id] = p['arr'][0]
+    a = []
+
+    for e in r:
+        u = p_u.get(e.userid)
+        if not u:
+            n = n-1
+            continue
+        sex = u['sex']
         t = e.dic_return()
-        t['src'] = src
+        t['object_name'] = '征MM' if e.object1 == 0 else '征GG'
+        t['nick_name'] = u['nick_name']
+        t['sex'] = sex
+        t['sex_name'] = '男' if sex == 1 else '女'
+        t['age'] = u['age']
+        df = 'img/default_female.jpg' if sex == 2 else 'img/default_male.jpg'
+        df = '%s/%s' % (conf.pic_ip, df)
+        src = p_m.get(e.userid)
+        t['src'] = src if src else df
         a.append(t)
     if not f:
         s.close()
-    return len(a), a
+    return {'page':page, 'arr':a, 'total': n, 'next': next_}
+
+def city_zhenghun(uid=None, page=None, limit=None, next_=None):
+    if not uid:
+        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
+    s = DBSession()
+    u = s.query(User).filter(User.id == uid).first()
+    if not u:
+        s.close()
+        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
+    loc1 = u.curr_loc1
+    loc2 = u.curr_loc2
+
+    r = list_zhenghun(sex=None, loc1=loc1, loc2=loc2, page=page, limit=limit, next_=next_, s=s)
+    s.close()
+    return r
+
+def detail_zhenghun(zid=None, s=None):
+    if not zid:
+        return {'code': -1, 'msg': '参数不正确'}
+    f = s
+    if not f:
+        s = DBSession()
+    r = s.query(Zhenghun).filter(Zhenghun.id == zid).first()
+    if not r:
+        if not f:
+            s.close()
+        return {'code': -1, 'msg': '参数不正确'}
+    uid = r.userid
+    ru = s.query(User).filter(User.id == uid).first()
+    if not ru:
+        if not f:
+            s.close()
+        return {'code': -1, 'msg': '参数不正确'}
+    rp = s.query(Picture).filter(Picture.id == uid).first()
+    p_u = {}
+    if rp:
+        p_u[rp.id] = rp.dic_array()
+    D = {}
+    D['nick_name'] = ru.nick_name if ru.nick_name else '新用户%s' % ru.mobile[-4:]
+    D['sex'] = ru.sex
+    D['sex_name'] = '男' if ru.sex == 1 else '女'
+    D['age'] = ru.age
+    D['loc1'] = r.loc1 if r.loc1 else ru.curr_loc1
+    D['loc2'] = r.loc2 if r.loc2 else ru.curr_loc2
+    D['height'] = ru.height
+    D['degree'] = ru.degree
+    if r.content:
+        cnt = r.content
+    else:
+        cnt = rs.content if rs.content else rs.motto
+    D['content'] =  cnt
+    D['scan_count'] = r.scan_count + 1
+    r.scan_count = r.scan_count + 1
+    D['time'] = str(r.time_).replace('-', '/')
+    D['valid_day'] = r.valid_day
+    D['title'] = r.title
+    D['object'] = r.object1
+    D['object_name'] = '征GG' if r.object1 == 0 else '征MM'
+    s.commit()
+
+    if not f:
+        s.close()
+    return D
 
 
 __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
@@ -2156,12 +2238,13 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'participate_dating', 'create_dating', 'remove_dating',
          'detail_dating', 'baoming_dating', 'list_zhenghun', 'write_img',
          'create_zhenghun', 'remove_zhenghun', 'sponsor_zhenghun',
+         'city_zhenghun', 'detail_zhenghun',
          'delimg', 'seeother', 'sendemail', 'yanyuan', 'yanyuan_check',
          'email', 'latest_conn', 'sawother', 'del_email']
 
 
 if __name__ == '__main__':
-    r = list_dating(loc1='四川', loc2='成都')
+    r = detail_zhenghun(1)
     print(r)
 '''
     r = create_dating(name='123', uid=19, age=18, sex=1, sjt=6, dt='2018-04-06 18:30:00',\

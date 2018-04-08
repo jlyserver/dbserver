@@ -32,6 +32,10 @@ icare_limit=100
 dating_page=6
 dating_limit=6
 freq_conn=6
+zhenghun_page=6
+zhenghun_limit=6
+#超过50就不记录了
+look_limit=50
 
 [digest]
 digest_salt=
@@ -65,7 +69,7 @@ email_fee=1
 send_email_fee=1
 yanyuan_fee=1
 yuehui_fee=2
-zhenghun_fee=2
+zhenghun_fee=10
 timeout_fee=30
 free_bean=10
 

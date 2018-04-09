@@ -13,6 +13,7 @@ import re
 from tornado.options import define, options
 from conf import conf
 from db import *
+from cache import cache
 
 define("port", default=conf.sys_port, help="run on the given port", type=int)
 
@@ -56,6 +57,7 @@ class IndexNewHandler(tornado.web.RequestHandler):
             d = json.dumps(d)
             self.write(d)
         else:
+            key = 'index_new_%d_%d_%d_%d' % (sex, limit, page, next_)
             t = time.time()
             t = t - conf.toffset_newest*3600*24
             t = time.localtime(t)
@@ -85,15 +87,10 @@ class FindHandler(tornado.web.RequestHandler):
             agemin, agemax = agemax, agemin
         c, r = find_users(sex, agemin, agemax, cur1, cur2, ori1, ori2,\
                           degree, salary, xz, sx, limit, page, next_)
-        print(r)
-        if not r:
-            d = {'code': -1, 'msg':'error', 'data':{}}
-            d = json.dumps(d)
-            self.write(d)
-        else:
-            d = {'code': 0, 'msg':'ok', 'count':c, 'data':r}
-            d = json.dumps(d)
-            self.write(d)
+        d = {'code': 0, 'msg':'ok', 'count':c, 'data':r}
+        print(d)
+        d = json.dumps(d)
+        self.write(d)
 
 class EmailHandler(tornado.web.RequestHandler):
     def post(self):
@@ -229,21 +226,23 @@ class YanyuanCheckHandler(tornado.web.RequestHandler):
 class CtxHandler(tornado.web.RequestHandler):
     def post(self):
         uid = self.get_argument('uid', None)
-        if not uid:
-            r = {'code': -1, 'data': {}, 'msg': 'cookie is invalid'}
-            r = json.dumps(r)
-            self.write(r)
-        else:
-            uid = int(uid)
-            d = get_ctx_info(uid)
-            if not d:
-                r = {'code': -1, 'data': {}, 'msg': 'no user exist'}
-                r = json.dumps(r)
-                self.write(r)
+        d = {'code': -1, 'msg': '参数不正确'}
+        if uid:
+            key = 'ctx_%s' % uid
+            val = cache.get(key)
+            if val:
+                v = json.loads(val)
+                d = {'code': 0, 'msg': 'ok', 'data': v}
             else:
-                r = {'code': 0, 'data': d, 'msg': 'ok'}
-                r = json.dumps(r)
-                self.write(r)
+                uid = int(uid)
+                d = get_ctx_info(uid)
+                if d:
+                    v = json.dumps(d)
+                    cache.set(key, v)
+                    d = {'code': 0, 'data': d, 'msg': 'ok'}
+                    d = json.dumps(d)
+        self.write(d)
+
 class LoginHandler(tornado.web.RequestHandler):
     def post(self):
         mobile = self.get_argument('mobile', None)
@@ -848,7 +847,7 @@ class DetailZhenghunHandler(tornado.web.RequestHandler):
     def post(self):
         zid = self.get_argument('zid', None)
         d = {'code': -1 , 'msg': '参数不正确'}
-        if uid:
+        if zid:
             d = detail_zhenghun(zid=zid)
         d = json.dumps(d)
         self.write(d)

@@ -291,6 +291,8 @@ def get_ctx_info(uid, s=None):
     f = s
     if not f:
         s = DBSession()
+    N = s.query(User).count()
+    c['total'] = N
     r = s.query(User).filter(User.id == uid).first()
     if not r:
         if not f:
@@ -580,10 +582,13 @@ def find_users(sex=None,  agemin=None, agemax=None, cur1=None, cur2=None,\
     s = DBSession()
     t = s.query(User)
     if sex and sex in [1,2]:
+        sex = int(sex)
         t = t.filter(User.sex == sex)
     if agemin and agemin >= 18:
+        agemin = int(agemin)
         t = t.filter(User.age >= agemin)
     if agemax and agemax >= 18:
+        agemax = int(agemax)
         t = t.filter(User.age <= agemax)
     if cur1:
         t = t.filter(User.curr_loc1 == cur1)
@@ -593,20 +598,22 @@ def find_users(sex=None,  agemin=None, agemax=None, cur1=None, cur2=None,\
         t = t.filter(User.ori_loc1 == ori1)
     if ori2:
         t = t.filter(User.ori_loc2 == ori2)
-    if degree and degree in [0, 1, 2, 3, 4, 5]:
-        t = t.filter(User.degree == degree)
-    if salary and salary in [0, 1, 2, 3, 4, 5]:
-        t = t.filter(User.salary == salary)
-    if xz and xz in [i for i in xrange(13)]:
-        t = t.filter(User.xingzuo == xz)
-    if sx and sx in [i for i in xrange(13)]:
-        t = t.filter(User.shengxiao == sx)
-    if salary and salary in [i for i in xrange(7) if i > 0]:
-        t = t.filter(User.salary == salary)
+    if degree and int(degree) in [0, 1, 2, 3, 4, 5]:
+        t = t.filter(User.degree == int(degree))
+    if salary and int(salary) in [0, 1, 2, 3, 4, 5]:
+        t = t.filter(User.salary == int(salary))
+    if xz and int(xz) in [i for i in xrange(13)]:
+        t = t.filter(User.xingzuo == int(xz))
+    if sx and int(sx) in [i for i in xrange(13)]:
+        t = t.filter(User.shengxiao == int(sx))
+    if salary and int(salary) in [i for i in xrange(7) if i > 0]:
+        t = t.filter(User.salary == int(salary))
     count = t.count()
     r = t.limit(limit).offset(page*next_)
 
     ids = [e.id for e in r]
+    if not ids:
+        return 0, []
     m = s.query(Statement).filter(Statement.id.in_(ids)).all()
     m_ = {}
     for e in m:
@@ -2198,11 +2205,23 @@ def detail_zhenghun(zid=None, s=None):
         if not f:
             s.close()
         return {'code': -1, 'msg': '参数不正确'}
+    rs = s.query(Statement).filter(Statement.id == uid).first()
+    statment = ''
+    if rs:
+        statement = rs.content if rs.content else rs.motto
+    statement = statement[:117] + '...' if len(statement) >= 120 else statement
     rp = s.query(Picture).filter(Picture.id == uid).first()
     p_u = {}
     if rp:
         p_u[rp.id] = rp.dic_array()
     D = {}
+    D['statement'] = statement
+    df = 'img/default_female.jpg' if ru.sex == 2 else 'img/default_male.jpg'
+    df = '%s/%s' % (conf.pic_ip, df)
+    src = p_u[rp.id]['arr'][0]
+    src = df if not src else src
+    D['src'] = src
+    D['uid'] = uid
     D['nick_name'] = ru.nick_name if ru.nick_name else '新用户%s' % ru.mobile[-4:]
     D['sex'] = ru.sex
     D['sex_name'] = '男' if ru.sex == 1 else '女'
@@ -2227,7 +2246,7 @@ def detail_zhenghun(zid=None, s=None):
 
     if not f:
         s.close()
-    return D
+    return {'code': 0, 'msg': 'ok', 'data':D}
 
 
 __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',

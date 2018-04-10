@@ -75,3 +75,6 @@ free_bean=10
 
 [msg]
 msg_yanyuan=Ta对你有眼缘,赶快去看一下吧
+
+[debug]
+debug=1

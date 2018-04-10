@@ -52,43 +52,51 @@ class IndexNewHandler(tornado.web.RequestHandler):
         limit = int(self.get_argument('limit', 0))
         page  = int(self.get_argument('page',  0))
         next_ = int(self.get_argument('next',  0))
+        d = {'code': -1, 'msg':'参数错误'}
         if sex < 1 or limit < 1 or page < 1 or next_ != 0:
-            d = {'code': -1, 'msg':'error', 'data':{}}
-            d = json.dumps(d)
-            self.write(d)
+            pass
         else:
-            key = 'index_new_%d_%d_%d_%d' % (sex, limit, page, next_)
             t = time.time()
             t = t - conf.toffset_newest*3600*24
             t = time.localtime(t)
             now = time.strftime('%Y-%m-%d %H:%M:%S', t)
             r = query_new(t, sex, limit, page, next_)
             d = {'code':0, 'msg':'ok', 'data':r}
-            d = json.dumps(d)
-            self.write(d)
+        d = json.dumps(d)
+        self.write(d)
 
 class FindHandler(tornado.web.RequestHandler):
     def post(self):
-        sex          = int(self.get_argument('sex',     -1))
-        agemin       = int(self.get_argument('agemin',  -1))
-        agemax       = int(self.get_argument('agemax',  -1))
+        sex          = self.get_argument('sex', None)
+        sex          = int(sex) if sex else -1
+        agemin       = self.get_argument('agemin', None)
+        agemin       = int(agemin) if agemin else -1
+        agemax       = self.get_argument('agemax', None)
+        agemax       = int(agemax) if agemax else -1
         cur1         = self.get_argument('cur1',    None)
         cur2         = self.get_argument('cur2',    None)
         ori1         = self.get_argument('ori1',    None)
         ori2         = self.get_argument('ori2',    None)
-        degree       = int(self.get_argument('degree', -1))
-        salary       = int(self.get_argument('salary', -1))
+        degree       = self.get_argument('degree', None)
+        degree       = int(degree) if degree else -1
+        salary       = self.get_argument('salary', None)
+        salary       = int(salary) if salary else -1
         xz           = self.get_argument('xingzuo', None)
         sx           = self.get_argument('shengxiao', None)
-        limit        = int(self.get_argument('limit', -1))
-        page         = int(self.get_argument('page', -1))
-        next_        = int(self.get_argument('next', -1))
+        limit        = self.get_argument('limit', None)
+        limit        = int(limit) if limit else -1
+        page         = self.get_argument('page', None)
+        page         = int(page) if page else -1
+        next_        = self.get_argument('next', None)
+        next_        = int(next_) if next_ else -1
         if agemin > agemax:
             agemin, agemax = agemax, agemin
+        d = {}
         c, r = find_users(sex, agemin, agemax, cur1, cur2, ori1, ori2,\
                           degree, salary, xz, sx, limit, page, next_)
         d = {'code': 0, 'msg':'ok', 'count':c, 'data':r}
-        print(d)
+        if conf.debug:
+            print(d)
         d = json.dumps(d)
         self.write(d)
 
@@ -228,32 +236,22 @@ class CtxHandler(tornado.web.RequestHandler):
         uid = self.get_argument('uid', None)
         d = {'code': -1, 'msg': '参数不正确'}
         if uid:
-            key = 'ctx_%s' % uid
-            val = cache.get(key)
-            if val:
-                v = json.loads(val)
-                d = {'code': 0, 'msg': 'ok', 'data': v}
-            else:
-                uid = int(uid)
-                d = get_ctx_info(uid)
-                if d:
-                    v = json.dumps(d)
-                    cache.set(key, v)
-                    d = {'code': 0, 'data': d, 'msg': 'ok'}
-                    d = json.dumps(d)
+            uid = int(uid)
+            r = get_ctx_info(uid)
+            if r:
+                d = {'code': 0, 'data': r, 'msg': 'ok'}
+        d = json.dumps(d)
         self.write(d)
 
 class LoginHandler(tornado.web.RequestHandler):
     def post(self):
         mobile = self.get_argument('mobile', None)
         passwd = self.get_argument('password', None)
+        d = {'code': -1, 'msg': '参数错误'}
         if not mobile or not passwd:
-            r = {'code': -1, 'msg': 'mobile or password is null'}
-            d = json.dumps(r)
-            self.write(d)
+            pass
         else:
             r = query_user_login(mobile, passwd)
-            d = {}
             if not r:
                 d = {'code': -1, 'msg': 'not exist'}
             else:
@@ -261,8 +259,8 @@ class LoginHandler(tornado.web.RequestHandler):
                 info = get_user_info(uid)
                 info['user'] = r
                 d = {'code': 0, 'msg': 'ok', 'data': info}
-            d = json.dumps(d)
-            self.write(d)
+        d = json.dumps(d)
+        self.write(d)
 #注册发送验证码
 class VerifyHandler(tornado.web.RequestHandler):
     def post(self):
@@ -358,7 +356,7 @@ class RegistHandler(tornado.web.RequestHandler):
 
 class BasicEditHandler(tornado.web.RequestHandler):
     def post(self):
-        ctx          = self.get_argument('ctx', None)
+        uid          = self.get_argument('uid', None)
         nick_name    = self.get_argument('nick_name', None)
         aim          = self.get_argument('aim',       None)
         age          = self.get_argument('age',       None)
@@ -376,96 +374,63 @@ class BasicEditHandler(tornado.web.RequestHandler):
         ori_loc2     = self.get_argument('ori_loc2',  None)
         motto        = self.get_argument('motto',     None)
         hobby        = self.get_argument('hobby',     '') 
-        print('hobby=%s' % hobby)
-        if hobby:
-            h = []
-            try:
-                h = json.loads(hobby)
-            except:
-                h = []
-            hobby = h
-        c = {}
-        try:
-            c = json.loads(ctx)
-        except:
-            c = {}
-        ctx = c
-        if not ctx:
-            r = {'code':-1, 'msg': '没有找到对应的用户'}
-            r = json.dumps(r)
-            self.write(r)
+        d = {'code': -1, 'msg': '参数不正确'}
+        if not uid:
+            pass
         else:
-            r = update_basic(nick_name, aim, age, marriage, xingzuo,\
+            if conf.debug:
+                print('hobby=%s' % hobby)
+            if hobby:
+                h = []
+                try:
+                    h = json.loads(hobby)
+                except:
+                    h = []
+                hobby = h
+            r = update_basic(uid, nick_name, aim, age, marriage, xingzuo,\
                        shengxiao, blood, weight, height, degree, nation, \
-                  cur_loc1, cur_loc2, ori_loc1, ori_loc2, motto, *hobby, **ctx)
-            print('cur_loc1=%s cur_loc2=%s ori_loc1=%s ori_loc2=%s', (cur_loc1, cur_loc2, ori_loc1, ori_loc2))
+                  cur_loc1, cur_loc2, ori_loc1, ori_loc2, motto, *hobby)
+            if conf.debug:
+                print('cur_loc1=%s cur_loc2=%s ori_loc1=%s ori_loc2=%s', (cur_loc1, cur_loc2, ori_loc1, ori_loc2))
             if not r:
-                r = {'code': -1, 'msg': '编辑失败'}
+                d = {'code': -1, 'msg': '编辑失败'}
             else:
-                r = {'code': 0, 'msg': '编辑成功', 'data': r}
-            r = json.dumps(r)
-            self.write(r)
+                d = {'code': 0, 'msg': '编辑成功', 'data': r}
+        d = json.dumps(d)
+        self.write(d)
 
 class StatementEditHandler(tornado.web.RequestHandler):
     def post(self):
-        ctx       = self.get_argument('ctx', None)
+        uid       = self.get_argument('uid', None)
         cnt       = self.get_argument('content', None)
-        if not ctx or not cnt:
-            r = {'code': -1, 'msg':'failed!', 'data': {}}
-            r = json.dumps(r)
-            self.write(r)
+        d = {'code': -1, 'msg': '参数错误'}
+        if not uid or not cnt:
+            pass
         else:
-            d = {}
-            try:
-                d = json.loads(ctx)
-            except:
-                d = {}
-            if not d:
-                r = {'code': -1, 'msg':'failed!', 'data': {}}
-                r = json.dumps(r)
-                self.write(r)
-            else:
-                r = edit_statement(cnt, **d)
-                if not r:
-                    r = {'code': -1, 'msg': '编辑失败'}
-                else:
-                    r = {'code': 0, 'msg': '编辑成功', 'data': r}
-                r = json.dumps(r)
-                self.write(r)
+            r = edit_statement(uid, cnt)
+            if r:
+                d = {'code': 0, 'msg': '编辑成功', 'data': r}
+        d = json.dumps(d)
+        self.write(d)
 
 class OtherEditHandler(tornado.web.RequestHandler):
     def post(self):
-        ctx       = self.get_argument('ctx', None)
+        uid       = self.get_argument('uid', None)
         salary    = self.get_argument('salary', None)
         work      = self.get_argument('work', None)
         car       = self.get_argument('car', None)
         house     = self.get_argument('house', None)
-        if not ctx:
-            r = {'code': -1, 'msg':'invalid', 'data': {}}
-            r = json.dumps(r)
-            self.write(r)
+        d = {'code': -1, 'msg': '参数错误'}
+        if not uid:
+            pass
         elif not salary and not work and not car and not house:
-            r = {'code': -1, 'msg':'noneed', 'data': {}}
-            r = json.dumps(r)
-            self.write(r)
+            pass
         else:
-            d = {}
-            try:
-                d = json.loads(ctx)
-            except:
-                d = {}
-            if not d:
-                r = {'code': -1, 'msg':'invalid', 'data': {}}
-                r = json.dumps(r)
-                self.write(r)
-            else:
-                r = edit_other(salary, work, car, house, **d)
-                if not r:
-                    r = {'code': -1, 'msg': '编辑失败'}
-                else:
-                    r = {'code': 0, 'msg': '编辑成功', 'data': r}
-                r = json.dumps(r)
-                self.write(r)
+            r = edit_other(uid, salary, work, car, house)
+            if r:
+                d = {'code': 0, 'msg': '编辑成功', 'data': r}
+        d = json.dumps(d)
+        self.write(d)
 
 class SeeOtherHandler(tornado.web.RequestHandler):
     def post(self):
@@ -497,24 +462,15 @@ class SawOtherHandler(tornado.web.RequestHandler):
 class VerifyOtherHandler(tornado.web.RequestHandler):
     def post(self):
         kind = int(self.get_argument('kind', 0))
-        ctx  = self.get_argument('ctx',  None)
+        uid  = self.get_argument('uid',  None)
         num  = self.get_argument('num',  None)
-        d = {}
-        if not ctx or not kind or not num:
-            d = {'code':-1, 'msg':'参数错误'}
+        d = {'code':-1, 'msg':'参数错误'}
+        if not uid or not kind or not num:
+            pass
         else:
-            try:
-                ctx = json.loads(ctx)
-            except:
-                d = {}
-            if not d:
-                r = {'code': -1, 'msg': 'invalid ctx'}
-            else:
-                r = verify_wx_qq_email(num, kind, **ctx)
-                if r:
-                    d = {'code': 0, 'msg': '验证成功', 'data': r}
-                else:
-                    d = {'code': -1, 'msg': '验证失败'}
+            r = verify_wx_qq_email(uid, num, kind)
+            if r:
+                d = {'code': 0, 'msg': '验证成功', 'data': r}
         d = json.dumps(d)
         self.write(d)
 
@@ -553,32 +509,22 @@ class DelImgHandler(tornado.web.RequestHandler):
 
 class PublicHandler(tornado.web.RequestHandler):
     def post(self):
-        ctx       = self.get_argument('ctx', None)
+        uid       = self.get_argument('uid', None)
         kind      = self.get_argument('kind', None)
         action    = self.get_argument('action', None)
-        if not ctx or not kind or not action:
+        if not uid or not kind or not action:
             r = {'code': -1, 'msg':'参数不正确'}
             r = json.dumps(r)
             self.write(r)
         else:
-            d = {}
-            try:
-                d = json.loads(ctx)
-            except:
-                d = {}
-            if not d:
-                r = {'code': -2, 'msg':'请先登录'}
-                r = json.dumps(r)
-                self.write(r)
+            kind, action = int(kind), int(action)
+            r = public_conn(uid, kind, action)
+            if not r:
+                r = {'code': -1, 'msg': '参数错误'}
             else:
-                kind, action = int(kind), int(action)
-                r = public_conn(kind, action, **d)
-                if not r:
-                    r = {'code': -1, 'msg': '编辑失败'}
-                else:
-                    r = {'code': 0, 'msg': '编辑成功', 'data': r}
-                r = json.dumps(r)
-                self.write(r)
+                r = {'code': 0, 'msg': 'ok'}
+            r = json.dumps(r)
+            self.write(r)
 
 class ISeeHandler(tornado.web.RequestHandler):
     def post(self):

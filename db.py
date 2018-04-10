@@ -34,9 +34,19 @@ mobile 手机号码
 return: True=手机号存在     False=手机号不存在
 '''
 def verify_mobile(mobile):
+    if not mobile:
+        return False
+    key = 'exist_mobile_%s' % str(mobile)
+    val = cache.get(key)
+    if val:
+        return True if val == 1 else False
+
     s = DBSession()
     r = s.query(User).filter(User.mobile == mobile).first()
     s.close()
+
+    v = 1 if r else -1
+    cache.set(key, v, conf.redis_timeout)
     return True if r else False
 #找回密码 {}=失败  ctx=成功
 def find_password(mobile, passwd):
@@ -56,12 +66,25 @@ def find_password(mobile, passwd):
             s.close()
             return {}
     uid = r.id
-    ctx = get_ctx_info(uid, s=s)
+    key = 'ctx_info_%d' % uid
+    val = cache.get(key)
+    if val:
+        v = json.loads(val)
+        v['user']['password'] = tok
+        v = json.dumps(v)
+        cache.set(key, v, conf.redis_timeout)
+    ctx = get_ctx_info(uid, clean=True, s=s)
     s.close()
     return ctx
 
 #用户注册 ={} 已经注册或db出错  =ctx{}注册成功
 def user_regist(mobile, passwd, sex, s=None):
+    key = 'exist_mobile_%s' % str(mobile)
+    val = cache.get(key)
+    if val and val == 1:
+        cache.set(key, val, conf.redis_timeout)     
+        return {}
+
     f = s
     if not f:
         s = DBSession()
@@ -114,7 +137,8 @@ def user_regist(mobile, passwd, sex, s=None):
         res = False
     ctx = {}
     if res:
-        ctx = get_ctx_info(uid, s=s)
+        cache.set(key, 1, conf.redis_timeout)
+        ctx = get_ctx_info(uid, clean=True, s=s)
     if not f:
         s.close()
     return ctx
@@ -154,9 +178,19 @@ def query_user_login(mobile, passwd, s=None):
         s.close()
     return rs
 #根据用户的uid查询内心独白和个性签名
-def query_statement_by_uid(uid, s=None):
+def query_statement_by_uid(uid, clean=False, s=None):
     if not uid:
         return {}
+    key = 'statement_%s' % str(uid)
+    if not clean:
+        val = cache.get(key)
+        if val:
+            cache.set(key, val, conf.redis_timeout)
+            v = json.loads(val)
+            return v
+    else:
+        cache.del_(key)
+
     t = s
     if not t:
         s = DBSession()
@@ -173,11 +207,26 @@ def query_statement_by_uid(uid, s=None):
         r = {}
     if not t:
         s.close()
+
+    val = json.dumps(r)
+    cache.set(key, val, conf.redis_timeout)
+
     return r
 #根据用户的uid查询用户的其他信息:qq wx email telephone
-def query_otherinfo_by_uid(uid, s=None):
+def query_otherinfo_by_uid(uid, clean=False, s=None):
     if not uid:
         return {}
+   
+    key = 'otherinfo_%s' % str(uid)
+    if not clean:
+        val = cache.get(key)
+        if val:
+            cache.set(key, val, conf.redis_timeout)
+            v = json.loads(val)
+            return v
+    else:
+        cache.del_(key)
+
     t = s
     if not s:
         s = DBSession()
@@ -197,11 +246,26 @@ def query_otherinfo_by_uid(uid, s=None):
         r = {}
     if not t:
         s.close()
+
+    val = json.dumps(r)
+    cache.set(key, val, conf.redis_timeout)
+
     return r
 #根据用户的uid查询对应的图片url
-def query_pic_by_uid(uid, s=None):
+def query_pic_by_uid(uid, clean=False, s=None):
     if not uid:
         return {}
+
+    key = 'pic_by_uid_%s' % str(uid)
+    if not clean:
+        val = cache.get(key)
+        if val:
+            cache.set(key, val, conf.redis_timeout)
+            v = json.loads(val)
+            return v
+    else:
+        cache.del_(key)
+
     t = s
     if not t:
         s = DBSession()
@@ -218,12 +282,27 @@ def query_pic_by_uid(uid, s=None):
         r = {}
     if not t:
         s.close()
+
+    val = json.dumps(r)
+    cache.set(key, val, conf.redis_timeout)
+
     return r
 
 #根据用户uid查询兴趣爱好
-def query_hobby_by_uid(uid, s=None):
+def query_hobby_by_uid(uid, clean=False, s=None):
     if not uid:
         return {}
+
+    key = 'hobby_by_uid_%s' % str(uid)
+    if not clean:
+        val = cache.get(key)
+        if val:
+            cache.set(key, val, conf.redis_timeout)
+            v = json.loads(val)
+            return v
+    else:
+        cache.del_(key)
+
     t = s
     if not t:
         s = DBSession()
@@ -239,10 +318,25 @@ def query_hobby_by_uid(uid, s=None):
         r = {}
     if not t:
         s.close()
+
+    val = json.dumps(r)
+    cache.set(key, val, conf.redis_timeout)
+
     return r
-def query_account_by_uid(uid, s=None):
+def query_account_by_uid(uid, clean=False, s=None):
     if not uid:
         return {}
+
+    key = 'account_by_uid_%s' % str(uid)
+    if not clean:
+        val = cache.get(key)
+        if val:
+            cache.set(key, val, conf.redis_timeout)
+            v = json.loads(val)
+            return v
+    else:
+        cache.del_(key)
+
     t = s
     if not t:
         s = DBSession()
@@ -258,6 +352,10 @@ def query_account_by_uid(uid, s=None):
         r = {}
     if not t:
         s.close()
+
+    val = json.dumps(r)
+    cache.set(key, val, conf.redis_timeout)
+
     return r
 
 def get_user_info(uid, s=None):
@@ -266,11 +364,11 @@ def get_user_info(uid, s=None):
     f = s
     if not f:
         s = DBSession()
-    statement = query_statement_by_uid(uid, s=s)
-    otherinfo = query_otherinfo_by_uid(uid, s=s)
-    pic       = query_pic_by_uid(uid, s=s)
-    hobby     = query_hobby_by_uid(uid, s=s)
-    account   = query_account_by_uid(uid, s=s)
+    statement = query_statement_by_uid(uid, clean=False, s=s)
+    otherinfo = query_otherinfo_by_uid(uid, clean=False, s=s)
+    pic       = query_pic_by_uid(uid, clean=False, s=s)
+    hobby     = query_hobby_by_uid(uid, clean=False, s=s)
+    account   = query_account_by_uid(uid, clean=False, s=s)
     if not f:
         s.close()
     return {'statement':statement, 'otherinfo':otherinfo, 'pic': pic,
@@ -284,7 +382,7 @@ def get_user_info(uid, s=None):
   hobby: {} //见hobby表
   account: {} //见account表
 '''
-def get_ctx_info(uid, s=None):
+def get_ctx_info(uid, clean=False, s=None):
     c = {}
     if not uid:
         return c
@@ -308,102 +406,86 @@ def get_ctx_info(uid, s=None):
     c['user'] = r.dic_return()
     c['user']['nation_name'] = nation_table.get(int(c['user']['nation']), '未填')
     
-    st = query_statement_by_uid(uid, s=s)
+    st = query_statement_by_uid(uid, clean=clean, s=s)
     c['statement'] = st
 
-    o = query_otherinfo_by_uid(uid, s=s)
+    o = query_otherinfo_by_uid(uid, clean=clean, s=s)
     c['otherinfo'] = o
 
-    p = query_pic_by_uid(uid, s=s)
+    p = query_pic_by_uid(uid, clean=clean, s=s)
     c['pic'] = p
 
     sex = c['user']['sex']
     df = 'img/default_female.jpg' if sex == 2 else 'img/default_male.jpg'
     if len(c['pic']['arr'][0]) == 0:
        c['pic']['arr'][0] = '%s/%s' % (conf.pic_ip, df)
-    h = query_hobby_by_uid(uid, s=s)
+    h = query_hobby_by_uid(uid, clean=clean, s=s)
     c['hobby'] = h
 
-    a = query_account_by_uid(uid, s=s)
+    a = query_account_by_uid(uid, clean=clean, s=s)
     c['account'] = a
     if not f:
         s.close()
     return c
 def get_ctx_info_mobile_password(mobile, password, s=None):
-    f = s
-    if not f:
-        s = DBSession()
-    r = query_user_login(mobile, password, s=s)
-    if not r:
+    key = 'ctx_info_mobile_password_%s_%s'%(str(mobile), str(password))
+    val = cache.get(key)
+    uid = val
+    if not val:
+        f = s
         if not f:
-            s.close()
-        return False
-    uid = r['id']
-    r = get_ctx_info(uid, s=s)
+            s = DBSession()
+        r = query_user_login(mobile, password, s=s)
+        if not r:
+            if not f:
+                s.close()
+            return False
+        uid = r['id']
+        cache.set(key, uid, conf.redis_timeout)
+
+    r = get_ctx_info(uid, clean=False, s=s)
     return r
 
 #更新个人中心中用户的基本信息
 #return ctx
-def update_basic(nick_name=None, aim=None, age=None,\
+def update_basic(uid=None, nick_name=None, aim=None, age=None,\
         marriage=None, xingzuo=None, shengxiao=None, blood=None,\
         weight=None, height=None, degree=None, nation=None,\
         cur_loc1=None, cur_loc2=None, ori_loc1=None, ori_loc2=None,\
-        motto=None, *hobby, **ctx):
-    if not ctx or not ctx.get('user'):
-        return None
-    uid = ctx['user'].get('id')
+        motto=None, *hobby):
     if not uid:
         return None
     u = {}
     if nick_name:
         u[User.nick_name] = nick_name
-        ctx['user']['nick_name'] = nick_name
     if aim:
         u[User.aim] = int(aim)
-        ctx['user']['aim'] = int(aim)
     if age:
         u[User.age] = int(age)
-        ctx['user']['age'] = int(age)
     if marriage:
         u[User.marriage] = int(marriage)
-        ctx['user']['marriage'] = int(marriage)
     if xingzuo:
         u[User.xingzuo] = int(xingzuo)
-        ctx['user']['xingzuo'] = int(xingzuo)
     if shengxiao:
-        i = int(shengxiao)
-        u[User.shengxiao] = i
-        ctx['user']['shengxiao'] = i
+        u[User.shengxiao] = int(shengxiao)
     if blood:
-        i = int(blood)
-        u[User.blood] = i
-        ctx['user']['blood'] = i
+        u[User.blood]  = int(blood)
     if weight:
         u[User.weight] = int(weight)
-        ctx['user']['weight'] = int(weight)
     if height:
         u[User.height] = int(height)
-        ctx['user']['height'] = int(height)
     if degree:
-        i = int(degree)
-        u[User.degree] = i
-        ctx['user']['degree'] = i
+        u[User.degree] = int(degree)
     if nation:
         u[User.nation] = int(nation)
-        ctx['user']['nation_name'] = nation_table.get(int(nation), '未填')
-        ctx['user']['nation'] = int(nation)
     if cur_loc1:
         u[User.curr_loc1] = cur_loc1
-        ctx['user']['curr_loc1'] = cur_loc1
     if cur_loc2:
         u[User.curr_loc2] = cur_loc2
-        ctx['user']['curr_loc2'] = cur_loc2
     if ori_loc1:
         u[User.ori_loc1] = ori_loc1
-        ctx['user']['ori_loc1'] = ori_loc1
     if ori_loc2:
         u[User.ori_loc2] = ori_loc2
-        ctx['user']['ori_loc2'] = ori_loc2
     h = {Hobby.pashan:0,   Hobby.sheying:0, Hobby.yinyue:0,
          Hobby.dianying:0, Hobby.lvyou: 0,  Hobby.youxi: 0,
          Hobby.jianshen:0, Hobby.meishi: 0, Hobby.paobu: 0,
@@ -434,10 +516,6 @@ def update_basic(nick_name=None, aim=None, age=None,\
     motto = '' if not motto else motto
     st = {Statement.motto: motto}
     s.query(Statement).filter(Statement.id == uid).update(st)
-    if ctx.get('statement'):
-        ctx['statement']['motto'] = motto
-    else:
-        ctx['statement'] = {'id': uid, 'motto': motto, 'content':''}
     rh = s.query(Hobby).filter(Hobby.id == uid).update(h)
     try:
         s.commit()
@@ -445,7 +523,7 @@ def update_basic(nick_name=None, aim=None, age=None,\
         s.close()
         return None
     r = s.query(Hobby).filter(Hobby.id == uid).first()
-    ctx['hobby'] = r.dic_array() if r else {}
+    ctx = get_ctx_info(uid=uid, clean=True, s=s)
     s.close()
     return ctx
 
@@ -531,6 +609,13 @@ page:  一页有多少个
 next_: 第几页, 实际上是(next_+1)*limit个, next_从0开始
 '''
 def query_new(t, sex, limit, page, next_):
+    key = 'new_%s_%s_%s_%s' % (str(sex), str(limit), str(page), str(next_))
+    val = cache.get(key)
+    if val:
+        cache.set(key, val, conf.redis_timeout)
+        v = json.loads(val)
+        return v
+
     s = DBSession()
     r = s.query(User).filter(User.sex == sex).filter(User.regist_time >= t).limit(limit).offset(page*next_)
     ids = [e.id for e in r]
@@ -553,7 +638,11 @@ def query_new(t, sex, limit, page, next_):
             continue
         D[e.id] = {'user':e.dic_return2(), 'pic':pic, 'statement':st}
     s.close()
-    return [D[e] for e in D] if D else []
+    d = [D[e] for e in D] if D else []
+
+    val = json.dumps(d)
+    cache.set(key, val, conf.redis_timeout)
+    return d
 '''
 按条件查找
 sex:       1=男 2=女
@@ -634,13 +723,8 @@ def find_users(sex=None,  agemin=None, agemax=None, cur1=None, cur2=None,\
     return count, arr
 
 
-def edit_statement(cnt, **ctx):
-    if not ctx:
-        return None
-    if not ctx.get('user'):
-        return None
-    uid = ctx['user'].get('id')
-    if not uid:
+def edit_statement(uid, cnt):
+    if not uid or not cnt:
         return None
     su = {Statement.content:cnt}
 
@@ -651,37 +735,39 @@ def edit_statement(cnt, **ctx):
     except:
         s.close()
         return None
-    ctx['statement']['content'] = cnt
     s.close()
+    key = 'statement_%s' % str(uid)
+    val = cache.get(key)
+    if val:
+        v = json.loads(val)
+        v['content'] = cnt
+        val = json.dumps(v)
+        cache.set(key, val, conf.redis_timeout)
     return ctx
 
-def edit_other(salary=None, work=None, car=None, house=None, **ctx):
+def edit_other(uid=None, salary=None, work=None, car=None, house=None):
     if not salary and not work and not car and not house:
         return None
-    if not ctx:
-        return None
-    uid = ctx['user'].get('id')
     if not uid:
         return None
     ou  = {}
     if salary:
         ou[OtherInfo.salary] = salary
-        ctx['otherinfo']['salary'] = salary
     if work:
         ou[OtherInfo.work]  = work 
-        ctx['otherinfo']['work'] = work
     if car:
         ou[OtherInfo.car] = car
-        ctx['otherinfo']['car'] = car
     if house:
         ou[OtherInfo.house] = house 
-        ctx['otherinfo']['house'] = house
 
     s = DBSession()
-    s.query(OtherInfo).filter(OtherInfo.id == uid).update(ou)
+    s.query(OtherInfo).filter(OtherInfo.id == int(uid)).update(ou)
     s.commit()
     s.close()
-    return ctx
+
+    key = 'otherinfo_%s' % str(uid)
+    cache.del_(key)
+    return True
 '''
 kind=1 看手机 =2 看微信 =3看qq =4看邮箱号
 return: =-1参数不对
@@ -750,7 +836,8 @@ def sawother(cuid=None, uid=None, s=None):
         s = DBSession()
     cuid, uid = int(cuid), int(uid)
     if uid != cuid:
-        print('uid=%d cuid=%d' % (uid, cuid))
+        if conf.debug:
+            print('uid=%d cuid=%d' % (uid, cuid))
         rl = s.query(Look).filter(Look.from_id == cuid, Look.to_id == uid).order_by(desc(Look.time_)).all()
         if rl:
             ids = []
@@ -762,6 +849,13 @@ def sawother(cuid=None, uid=None, s=None):
         l = Look(id_=0, f=cuid, to=uid)
         s.add(l)
         s.commit()
+
+        key = 'see_%s_%s' % (str(cuid), str(1))
+        cache.del_(key)
+        key = 'see_%s_%s' % (str(cuid), str(2))
+        cache.del_(key)
+
+
     c = and_(Consume_record.userid == cuid, Consume_record.objid == uid)
     c = and_(c, Consume_record.way != 3, Consume_record.way != 4)
     r = s.query(Consume_record).filter(c).all()
@@ -806,33 +900,19 @@ def sawother(cuid=None, uid=None, s=None):
 '''
 num:  微信号或qq号或email
 kind: =1验证微信 =2验证qq =3验证email
-ctx:  用户的上下文, 包括uid
 return: 成功=ctx  失败=None
 '''
-def verify_wx_qq_email(num, kind, **ctx):
-    if not num or not kind or not ctx:
-        return None
-    uid = None
-    try:
-        uid = ctx['user']['id']
-    except:
-        uid = None
-    if not uid:
+def verify_wx_qq_email(uid, num, kind):
+    if not uid or not num or not kind:
         return None
     D = {}
     try:
         if kind == 1:
             D = {OtherInfo.wx: num, OtherInfo.verify_w:1}
-            ctx['otherinfo']['wx'] = num
-            ctx['otherinfo']['verify_w'] = 1
         elif kind == 2:
             D = {OtherInfo.qq: num, OtherInfo.verify_q:1}
-            ctx['otherinfo']['qq'] = num
-            ctx['otherinfo']['verify_q'] = 1
         else:
             D = {OtherInfo.email: num, OtherInfo.verify_e:1}
-            ctx['otherinfo']['email'] = num
-            ctx['otherinfo']['verify_e'] = 1
     except:
         return None
     s = DBSession()
@@ -843,7 +923,9 @@ def verify_wx_qq_email(num, kind, **ctx):
         s.close()
         return None
     s.close()
-    return ctx
+    key = 'otherinfo_%s' % str(uid)
+    cache.del_(key)    
+    return True
 
 def write_img(uid=None, first=None, second=None, third=None, kind=None):
     if not uid or not first or not second or not third or not kind:
@@ -885,6 +967,8 @@ def write_img(uid=None, first=None, second=None, third=None, kind=None):
                 return None
         s.commit()
     s.close()
+    key = 'pic_by_uid_%s' % str(uid)
+    cache.del_(key)
     return True
 
 def delimg(uid=None, src=None):
@@ -927,6 +1011,8 @@ def delimg(uid=None, src=None):
         r.count = r.count + 1
     s.commit()
     s.close()
+    key = 'pic_by_uid_%s' % str(uid)
+    cache.del_(key)
     return True
 #充值
 def recharge(uid, num, s=None):
@@ -946,6 +1032,8 @@ def recharge(uid, num, s=None):
     s.commit()
     if not f:
         s.close()
+    key = 'account_by_uid_%s' % str(uid)
+    cache.del_(key)
     return True
 
 '''
@@ -968,25 +1056,6 @@ def write_record(uid, objid, way, num, s=None):
         s.close()
     return True
 
-'''
-send_email: 发送邮件
-fid:        发送方的uid
-tid:        接收方的uid
-cnt:        发送邮件的内容
-return:     成功=True 失败=False
-'''
-def send_email(fid, tid, cnt, s=None):
-    if not fid or not tid or not cnt:
-        return False
-    f = s
-    if not f:
-        s = DBSession()
-    e = Email(f=fid, t=tid, c=cnt)
-    s.add(e)
-    s.commit()
-    if not f:
-        s.close()
-    return True
 '''
 根据uid获得邮件
 t:      0=收件箱  非0=发件箱
@@ -1012,35 +1081,29 @@ def get_email_by_uid(uid, limit, page, next_, t=0, s=None):
         s.close()
     return [] if not r else [e.dic_return() for e in r]
 
-def public_conn(kind, action, **ctx):
-    if not ctx:
+def public_conn(uid, kind, action):
+    if not uid:
         return None
     #手机 qq wx email
     if kind not in [1, 2, 3, 4] or action not in [0, 1]:
         return None
-    uid = ctx['user'].get('id')
-    if not uid:
-        return None
+    other = query_otherinfo_by_uid(uid)
     ou  = {}
     if kind == 1:
-        ctx['otherinfo']['public_m'] = action
         ou[OtherInfo.public_m] = action
-        if ctx['otherinfo']['verify_m'] == 0:
+        if other['verify_m'] == 0:
             return None
     elif kind == 2:
-        ctx['otherinfo']['public_w'] = action
         ou[OtherInfo.public_w] = action
-        if ctx['otherinfo']['verify_w'] == 0:
+        if other['verify_w'] == 0:
             return None
     elif kind == 3:
-        ctx['otherinfo']['public_q'] = action
         ou[OtherInfo.public_q] = action
-        if ctx['otherinfo']['verify_q'] == 0:
+        if other['verify_q'] == 0:
             return None
     elif kind == 4:
-        ctx['otherinfo']['public_e'] = action
         ou[OtherInfo.public_e] = action
-        if ctx['otherinfo']['verify_e'] == 0:
+        if other['verify_e'] == 0:
             return None
     s = DBSession()
     if ou:
@@ -1051,7 +1114,9 @@ def public_conn(kind, action, **ctx):
             s.close()
             return None
     s.close()
-    return ctx
+    key = 'otherinfo_%s' % str(uid)
+    cache.del_(key)
+    return True
 
 '''
 kind: =1我看过谁 =2谁看过我  
@@ -1059,6 +1124,14 @@ kind: =1我看过谁 =2谁看过我
 def see(uid, kind, s=None):
     if not uid:
         return None, None
+
+    key = 'see_%s_%s' % (str(uid), str(kind))
+    val = cache.get(key)
+    if val:
+        cache.set(key, val, conf.redis_timeout) 
+        v = json.loads(val)
+        return len(v), v
+
     f = s
     limit = 0
     if not f:
@@ -1124,10 +1197,23 @@ def see(uid, kind, s=None):
         else:
             m_a1_t[t1].append(d)
     a = sorted(m_a1_t.keys(), reverse=True)
-    D = [{'date': e, 'arr':m_a1_t[e]} for e in a]
+    D = []
+    for e in a:
+        t = {}
+        arr = m_a1_t[e]
+        tmp_arr = []
+        for h in arr:
+            if not t.get(h['id']):
+                t[h['id']] = 1
+                tmp_arr.append(h)
+        D.append({'date':e, 'arr':tmp_arr})
     if not f:
         s.close()
     N = N if N > 0 else 0
+
+    val = json.dumps(D)
+    cache.set(key, val, conf.redis_timeout)
+
     return len(a1), D
 
 '''
@@ -1149,6 +1235,16 @@ def seeme(uid, s=None):
 def icare(uid, s=None):
     if not uid:
         return None, None
+
+    key = 'icare_%s' % (str(uid))
+    val = cache.get(key)
+    if val:
+        cache.set(key, val, conf.redis_timeout)
+        v = json.loads(val)
+        return len(v), v
+
+
+    uid = int(uid)
     limit = conf.toffset_icare_limit
     f = s
     if not f:
@@ -1205,6 +1301,10 @@ def icare(uid, s=None):
     if not f:
         s.close()
     N = N if N > 0 else 0
+
+    val = json.dumps(D)
+    cache.set(key, val, conf.redis_timeout)
+
     return N, D
 
 '''
@@ -1213,6 +1313,8 @@ kind =1关注 =0取消关注
 def sendcare(uid=None, cuid=None, kind=None):
     if not uid or not cuid or not kind:
         return None
+
+
     s = DBSession()
     c = and_(Care.from_id == cuid, Care.to_id == uid)
     r = s.query(Care).filter(c).first()
@@ -1231,6 +1333,10 @@ def sendcare(uid=None, cuid=None, kind=None):
         s.commit()
         return True
     s.close()
+
+    key = 'icare_%s' % (str(cuid))
+    cache.del_(key)
+
     return True
 
 def yanyuan(uid=None, cuid=None, s=None):
@@ -1238,6 +1344,13 @@ def yanyuan(uid=None, cuid=None, s=None):
         return None
     if uid == cuid:
         return None
+
+    key = 'yanyuan_%s_%s' % (str(cuid), str(uid))
+    val = cache.get(key)
+    if val:
+        cache.set(key, val, conf.redis_timeout)
+        return True
+
     f = s
     if not f:
         s = DBSession()
@@ -1246,6 +1359,7 @@ def yanyuan(uid=None, cuid=None, s=None):
     if r:
         if not f:
             s.close()
+        cache.set(key, 1, conf.redis_timeout)
         return True
     y = Yanyuan(id_=0, f=cuid, t=uid)
     s.add(y)
@@ -1255,6 +1369,9 @@ def yanyuan(uid=None, cuid=None, s=None):
     s.commit()
     if not f:
         s.close()
+
+    cache.set(key, 1, conf.redis_timeout)
+
     return True
 
 def yanyuan_check(uid=None, cuid=None, s=None):
@@ -1262,6 +1379,13 @@ def yanyuan_check(uid=None, cuid=None, s=None):
         return None
     if uid == cuid:
         return None
+
+    key = 'yanyuan_%s_%s' % (str(cuid), str(uid))
+    val = cache.get(key)
+    if val:
+        cache.set(key, val, conf.redis_timeout)
+        return True
+
     f = s
     if not f:
         s = DBSession()
@@ -1269,6 +1393,9 @@ def yanyuan_check(uid=None, cuid=None, s=None):
     r = s.query(Yanyuan).filter(c).first()
     if not f:
         s.close()
+
+    if r:
+        cache.set(key, 1, conf.redis_timeout)
     return True if r else None
 
 #kind=1 收件 !=1 发件
@@ -1276,6 +1403,15 @@ def __mail(kind=1, uid=None, page=None, next_=None, s=None):
     if not uid or not page or next_ < 0:
         return []
     uid, page, next_ = int(uid), int(page), int(next_)
+    kind = int(kind)
+
+    key = 'mail_%d_%d_%d_%d' % (uid, kind, page, next_)
+    val = cache.get(key)
+    if val:
+        cache.set(key, val, conf.redis_timeout)
+        v = json.loads(val)
+        return v
+
     f = s
     if not f:
         s = DBSession()
@@ -1364,11 +1500,16 @@ def __mail(kind=1, uid=None, page=None, next_=None, s=None):
     for e in a:
         for d in e_m[e]:
             D.append(d)
+
+    val = json.dumps(D)
+    cache.set(key, val, conf.redis_timeout)
+
     return D
    
 def see_email(eid=None, cuid=None):
-    if not eid or not cuid:
+    if not eid:
         return None
+    eid = int(eid)
     s = DBSession()
     r = s.query(Email).filter(Email.id == eid).first()
     if not r:
@@ -1403,6 +1544,15 @@ def email(uid=None, page=None, next_=None, s=None):
 def latest_conn(uid=None, s=None):
     if not uid:
         return -1, None
+    uid = int(uid)
+
+    key = 'latest_%d' % uid
+    val = cache.get(key)
+    if val:
+        cache.set(key, val, conf.redis_timeout)
+        v = json.loads(val)
+        return 0, v 
+
     f = s
     if not f:
         s = DBSession()
@@ -1458,6 +1608,10 @@ def latest_conn(uid=None, s=None):
         a.append(d)
     if not f:
         s.close()
+
+    val = json.dumps(a)
+    cache.set(key, val, conf.redis_timeout)
+
     return 0, a
 
 '''
@@ -1508,6 +1662,12 @@ def sendemail(uid=None, cuid=None, content=None, eid=None, kind=0, s=None):
     s.commit()
     if not f:
         s.close()
+
+    key = 'mail_%d*'%cuid
+    cache.delpat(key)
+    key = 'mail_%d*'%uid
+    cache.delpat(key)
+
     return 0
 
 '''
@@ -1529,12 +1689,16 @@ def del_email(uid=None, eid=None, s=None):
         s.commit()
         if not f:
             s.close()
+        key = 'mail_%d*'%uid
+        cache.delpat(key)
         return True
     if r.to_id == uid:
         r.to_del = 1
         s.commit()
         if not f:
             s.close()
+        key = 'mail_%d*'%uid
+        cache.delpat(key)
         return True
 
     if not f:

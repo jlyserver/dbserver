@@ -68,6 +68,8 @@ class Picconf():
         self.free_bean          = p.getint('fee', 'free_bean')
 
         self.msg_yanyuan        = p.get('msg', 'msg_yanyuan')
+
+        self.debug              = p.getint('debug', 'debug')
     def dis(self):
         print(self.port)
 

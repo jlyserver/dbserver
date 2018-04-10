@@ -21,6 +21,8 @@ class Cache():
         return r
     def flushall(self):
         r = self.rds.flushall()
+    def delpat(self, k): 
+        self.rds.delete(*self.rds.keys(k))
 
 cache = Cache()
 

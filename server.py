@@ -331,6 +331,25 @@ class FindPasswordHandler(tornado.web.RequestHandler):
         d = json.dumps(d)
         self.write(d)
 
+class WxLoginHandler(tornado.web.RequestHandler):
+    def post(self):
+        nick_name = self.get_argument('nick_name', '')
+        sex       = self.get_argument('sex', '1')
+        unionid   = self.get_argument('unionid', '')
+        src       = self.get_argument('src', '')
+        if conf.debug:
+            print('nick_name=%s' % nick_name)
+            print('sex=%s'%sex)
+            print('unionid=%s'%unionid)
+        d = {'code': -1, 'msg': '参数错误'}
+        if not unionid:
+            pass
+        else:
+            r = wx_login_and_regist(unionid=unionid, sex=sex, nick_name=nick_name, src=src)
+            d = {'code': 0, 'msg': 'ok', 'data':r}
+        d = json.dumps(d)
+        self.write(d)
+
 
 class RegistHandler(tornado.web.RequestHandler):
     def post(self):
@@ -798,7 +817,17 @@ class DetailZhenghunHandler(tornado.web.RequestHandler):
         d = json.dumps(d)
         self.write(d)
 
-
+class EmailUnReadHandler(tornado.web.RequestHandler):
+    def post(self):
+        d = {'code': -1, 'msg': '参数错误'}
+        uid = self.get_argument('uid', None)
+        if not uid:
+            pass
+        else:
+            n = email_unread(uid=uid)
+            d = {'code': 0, 'msg': 'ok', 'data': n}
+        d = json.dumps(d)
+        self.write(d)
 
 if __name__ == "__main__":
     tornado.options.parse_command_line()
@@ -851,6 +880,8 @@ if __name__ == "__main__":
         ('/sponsor_zhenghun', SponsorZhenghunHandler),
         ('/city_zhenghun', CityZhenghunHandler),
         ('/detail_zhenghun', DetailZhenghunHandler),
+        ('/email_unread', EmailUnReadHandler),
+        ('/wxlogin', WxLoginHandler),
               ]
     application = tornado.web.Application(handler, **settings)
     http_server = tornado.httpserver.HTTPServer(application)

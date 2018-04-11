@@ -938,9 +938,6 @@ def write_img(uid=None, first=None, second=None, third=None, kind=None):
     else:
         src = '%s/%s/%s' % (first, second, third)
         if kind == '1':
-            if len(r.url0) and src != r.url0:
-                dp = DeprecatedPicture(0, r.url0)
-                s.add(dp)
             r.url0 = src
         else:
             r.count = r.count - 1
@@ -1517,6 +1514,10 @@ def see_email(eid=None, cuid=None):
     r.read_ = 1
     s.commit()
     s.close()
+
+    key = 'email_%d*'%int(cuid)
+    cache.delpat(key)
+
     return True
 
 def email(uid=None, page=None, next_=None, s=None):
@@ -1627,6 +1628,7 @@ def sendemail(uid=None, cuid=None, content=None, eid=None, kind=0, s=None):
         return -1
     if uid == cuid:
         return -1
+    uid, cuid = int(uid), int(cuid)
     f = s
     if not f:
         s = DBSession()
@@ -1662,6 +1664,11 @@ def sendemail(uid=None, cuid=None, content=None, eid=None, kind=0, s=None):
     s.commit()
     if not f:
         s.close()
+
+    key = 'email_unread_%d' % uid
+    val = cache.get(key)
+    if val:
+        cache.set(key, val+1, conf.redis_timeout)
 
     key = 'mail_%d*'%cuid
     cache.delpat(key)
@@ -2413,6 +2420,126 @@ def detail_zhenghun(zid=None, s=None):
     return {'code': 0, 'msg': 'ok', 'data':D}
 
 
+def wx_login_and_regist(unionid=None, sex=None, nick_name=None, src=None):
+    if not unionid:
+        return None
+    key = 'unionid_%s' % unionid
+    val = cache.get(key)
+    if val:
+        cache.set(key, val, conf.redis_timeout)
+        v = json.loads(val)
+        return v
+
+    s = DBSession()
+    c = and_(True, User.unionid == unionid)
+    r = s.query(User).filter(c).first()
+    D = {'uid': '', 'needup': 0}
+    uid = ''
+    if r:
+        rs = r.dic_return()
+        uid = r.id
+        D['uid'] = uid
+        if nick_name:
+            r.nick_name = nick_name
+        ft  = time.localtime()
+        now = time.strftime('%Y-%m-%d %H:%M:%S', ft)
+        r.last_login = now
+        day = rs['last_login'].split(' ')[0]
+        nd  = now.split(' ')[0]
+        rp = s.query(Picture).filter(Picture.id == uid).first()
+        if rp and len(rp.url0) and rp.url0.find('http:') == -1:
+            D['needup'] = 0
+        else:
+            if src:
+                rp.url0 = src
+            D['needup'] = 1
+        
+        s.commit()
+        if day != nd:
+            r = s.query(User_account).filter(User_account.id == uid).first()
+            if not r:
+                u = User_account(uid, 0, conf.free_bean)
+                s.add(u)
+            else:
+                r.free = conf.free_bean
+            s.commit()
+    else:
+        D['needup'] = 1
+        name = '' if not nick_name else nick_name
+        if not sex:
+            sex = 1
+        elif int(sex) == 1:
+            sex = 1
+        elif int(sex) == 2:
+            sex = 2
+        else:
+            sex = 1
+        u = User(name=name,sex=sex, unionid=unionid)
+        s.add(u)
+        s.commit()
+        ru = s.query(User).filter(User.unionid == unionid).first()
+        uid = ru.id
+        D['uid'] = uid
+        h  = Hobby(uid)
+        st = Statement(uid, motto='未填', stat='未填')
+        o  = OtherInfo(uid)
+        p = ''
+        if src:
+            p = Picture(uid, u0=src)
+        else:
+            p  = Picture(uid)
+        a  = User_account(id_=uid, num=0, f=conf.free_bean)
+        s.add(h)
+        s.add(st)
+        s.add(o)
+        s.add(p)
+        s.add(a)
+        res = False
+        try:
+            s.commit()
+            res = True
+        except:
+            rb = DBSession()
+            rb.query(User).filter(User.id == uid).delete(synchronize_session=False)
+            rb.query(Hobby).filter(Hobby.id == uid).delete(synchronize_session=False)
+            rb.query(Statement).filter(Statement.id == uid).delete(synchronize_session=False)
+            rb.query(OtherInfo).filter(OtherInfo.id == uid).delete(synchronize_session=False)
+            rb.query(Picture).filter(Picture.id == uid).delete(synchronize_session=False)
+            rb.query(User_account).filter(User_account.id == uid).delete(synchronize_session=False)
+            try:
+                rb.commit()
+            except:
+                rb.close()
+
+    s.close()
+
+    val = json.dumps(D)
+    cache.set(key, val, conf.redis_timeout)
+
+    key = 'new_%d*' % sex
+    cache.delpat(key)
+    return D
+
+def email_unread(uid=None):
+    if not uid:
+        return 0
+    uid = int(uid)
+    key = 'email_unread_%d' % uid
+    val = cache.get(key)
+    if val:
+        cache.set(key, val, conf.redis_timeout)
+        return val
+
+    s = DBSession()
+    c = and_(Email.to_id == uid, Email.to_del != 1, Email.read_ == 0)
+    r = s.query(Email).filter(c).count()
+    
+    cache.set(key, r, conf.redis_timeout)
+    s.close()
+    return r
+
+
+
 __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'user_regist', 'query_user', 'query_user_login', 'get_user_info',
          'update_basic','get_ctx_info', 'edit_statement', 'edit_other',
@@ -2421,13 +2548,14 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'participate_dating', 'create_dating', 'remove_dating',
          'detail_dating', 'baoming_dating', 'list_zhenghun', 'write_img',
          'create_zhenghun', 'remove_zhenghun', 'sponsor_zhenghun',
-         'city_zhenghun', 'detail_zhenghun',
+         'city_zhenghun', 'detail_zhenghun', 'wx_login_and_regist',
          'delimg', 'seeother', 'sendemail', 'yanyuan', 'yanyuan_check',
-         'email', 'latest_conn', 'sawother', 'del_email']
+         'email', 'latest_conn', 'sawother', 'del_email', 'email_unread',
+         'see_email']
 
 
 if __name__ == '__main__':
-    r = detail_zhenghun(1)
+    r = see_email(eid=32, cuid=20)
     print(r)
 '''
     r = create_dating(name='123', uid=19, age=18, sex=1, sjt=6, dt='2018-04-06 18:30:00',\

@@ -22,12 +22,22 @@ class Cache():
     def flushall(self):
         r = self.rds.flushall()
     def delpat(self, k): 
-        self.rds.delete(*self.rds.keys(k))
+        a = self.rds.keys(k)
+        self.rds.delete(*a)
 
 cache = Cache()
 
 if __name__ == '__main__':
     r = cache.flushall()
+    k1 = 'aaa_1'
+    k2 = 'aaa_2'
+    cache.set(k1, 1)
+    cache.set(k2, 1)
+    v = cache.get(k1)
+    print(v)
+    v = cache.get(k2)
+    print(v)
+    cache.delpat('aaa_*')
 #   r = cache.get('user_tanqiang_123')
 #   print(r)
     

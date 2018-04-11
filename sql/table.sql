@@ -3,7 +3,7 @@ create table if not exists user
 (
     id int unsigned primary key auto_increment,
     nick_name varchar(16),
-    password  varchar(32) not null,
+    password  varchar(32),
     mobile    varchar(16),
     sex tinyint default 0, /*0=unknown 1=male  2=female */
     aim tinyint default 0, /*0=未填 1=交友 2=征婚 3=聊天*/
@@ -24,6 +24,8 @@ create table if not exists user
     state tinyint default 0, /*征友状态 0=征友进行中 1=找到意中人*/
     regist_time timestamp default CURRENT_TIMESTAMP not null,
     last_login  timestamp,
+    openid varchar(32) default '', /*微信openid*/
+    unionid varchar(32) default '', /*微信unionid*/
     valid_state tinyint not null default 0, /*状态 0=合法 1=被禁止*/
     msg varchar(32) default '' /*被禁止的原因*/
 ) engine=InnoDB, charset=utf8;

@@ -29,9 +29,9 @@ class User(Base):
             sex=0, aim=0, age=18,\
             m=0, xz=0, sx=0, blood=0, salary=0, wt=50, ht=160, de=0, \
             na=1, cl1='', cl2='', ori1='', ori2='', st=0,
-            t=None, last_t='', v_st=0, msg=''):
+            t=None, last_t='', unionid='', v_st=0, msg=''):
         self.id       = id_
-        if len(name) == 0:
+        if len(name) == 0 and mobile:
             name = '新用户%s' % self.mobile[-4:]
         self.nick_name= name
         self.password = password
@@ -59,7 +59,13 @@ class User(Base):
             self.regist_time = now
         else:
             self.regist_time = t
-        self.last_login  = last_t
+        if not last_t:
+            t       = time.localtime()
+            now     = time.strftime('%Y-%m-%d %H:%M:%S', t)
+            self.last_login  = now
+        else:
+            self.last_login = last_t
+        self.unionid     = unionid
         self.valid_state = v_st
         self.msg         = msg
 
@@ -86,6 +92,7 @@ class User(Base):
     state             = Column(Integer)
     regist_time       = Column(TIMESTAMP)
     last_login        = Column(TIMESTAMP)
+    unionid           = Column(String(32))
     valid_state       = Column(Integer)
     msg               = Column(String(32))
 
@@ -101,8 +108,8 @@ class User(Base):
                  'degree':   self.degree,      'nation':    self.nation,
                  'curr_loc1':self.curr_loc1,   'curr_loc2': self.curr_loc2, 
                  'ori_loc1': self.ori_loc1,    'ori_loc2':  self.ori_loc2,
-                 'state':    self.state,       'msg': self.msg,
-                 'regist_time': str(self.regist_time),
+                 'state':    self.state,       'unionid':self.unionid,
+                 'regist_time': str(self.regist_time), 'msg': self.msg,
                  'valid_state': self.valid_state}
     def dic_return2(self):
         return { 'id':       self.id,          'nick_name': self.nick_name,
@@ -214,7 +221,7 @@ class Picture(Base):
         self.url9   = u9
     id           = Column(Integer, primary_key=True)
     count        = Column(Integer)
-    url0         = Column(String(64))
+    url0         = Column(String(192))
     url1         = Column(String(64))
     url2         = Column(String(64))
     url3         = Column(String(64))
@@ -235,6 +242,8 @@ class Picture(Base):
         a = [self.url0, self.url1, self.url2, self.url3, self.url4,\
              self.url5, self.url6, self.url7, self.url8, self.url9]
         for i in xrange(len(a)):
+            if i == 0 and a[0].find('http:') != -1:
+                continue
             if len(a[i]):
                 a[i] = '%s/%s/%s' % (conf.pic_ip, a[i], conf.postfix)
         return {'id':   self.id,     'count': self.count,  'arr': a}

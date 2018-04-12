@@ -75,6 +75,8 @@ free_bean=10
 
 [msg]
 msg_yanyuan=Ta对你有眼缘,赶快去看一下吧
+yanyuan_reject=Ta拒绝了你的眼缘
+yanyuan_accept=Ta接受了你的眼缘
 
 [debug]
 debug=1

@@ -346,7 +346,10 @@ class WxLoginHandler(tornado.web.RequestHandler):
             pass
         else:
             r = wx_login_and_regist(unionid=unionid, sex=sex, nick_name=nick_name, src=src)
-            d = {'code': 0, 'msg': 'ok', 'data':r}
+            if conf.debug:
+                print('r=', r)
+            if r:
+                d = {'code': 0, 'msg': 'ok', 'data':r}
         d = json.dumps(d)
         self.write(d)
 
@@ -428,7 +431,7 @@ class StatementEditHandler(tornado.web.RequestHandler):
         else:
             r = edit_statement(uid, cnt)
             if r:
-                d = {'code': 0, 'msg': '编辑成功', 'data': r}
+                d = {'code': 0, 'msg': '编辑成功'}
         d = json.dumps(d)
         self.write(d)
 
@@ -439,13 +442,19 @@ class OtherEditHandler(tornado.web.RequestHandler):
         work      = self.get_argument('work', None)
         car       = self.get_argument('car', None)
         house     = self.get_argument('house', None)
+        mobile    = self.get_argument('mobile', None)
+        wx        = self.get_argument('wx', None)
+        qq        = self.get_argument('qq', None)
+        email     = self.get_argument('email', None)
+
         d = {'code': -1, 'msg': '参数错误'}
         if not uid:
             pass
         elif not salary and not work and not car and not house:
             pass
         else:
-            r = edit_other(uid, salary, work, car, house)
+            r = edit_other(uid, salary, work, car, house,\
+                    mobile, wx, qq, email)
             if r:
                 d = {'code': 0, 'msg': '编辑成功', 'data': r}
         d = json.dumps(d)
@@ -829,6 +838,23 @@ class EmailUnReadHandler(tornado.web.RequestHandler):
         d = json.dumps(d)
         self.write(d)
 
+class YanYuanReplyHandler(tornado.web.RequestHandler):
+    def post(self):
+        cuid = self.get_argument('cuid', None)
+        uid  = self.get_argument('uid', None)
+        eid  = self.get_argument('eid', None)
+        kind = self.get_argument('kind', None)
+        d = {'code': -1, 'msg': '参数错误'}
+        if not cuid or not uid or not eid  or not kind:
+            pass
+        else:
+            r = yanyuan_reply(cuid, uid, eid, kind)
+            if r:
+                d = {'code': 0, 'msg': 'ok'}
+        d = json.dumps(d)
+        self.write(d)
+
+
 if __name__ == "__main__":
     tornado.options.parse_command_line()
     settings = {
@@ -882,6 +908,7 @@ if __name__ == "__main__":
         ('/detail_zhenghun', DetailZhenghunHandler),
         ('/email_unread', EmailUnReadHandler),
         ('/wxlogin', WxLoginHandler),
+        ('/yanyuan_reply', YanYuanReplyHandler),
               ]
     application = tornado.web.Application(handler, **settings)
     http_server = tornado.httpserver.HTTPServer(application)

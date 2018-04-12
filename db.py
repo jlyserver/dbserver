@@ -743,9 +743,10 @@ def edit_statement(uid, cnt):
         v['content'] = cnt
         val = json.dumps(v)
         cache.set(key, val, conf.redis_timeout)
-    return ctx
+    return True
 
-def edit_other(uid=None, salary=None, work=None, car=None, house=None):
+def edit_other(uid=None, salary=None, work=None, car=None, house=None,\
+               mobile=None, wx=None, qq=None, email=None):
     if not salary and not work and not car and not house:
         return None
     if not uid:
@@ -758,7 +759,15 @@ def edit_other(uid=None, salary=None, work=None, car=None, house=None):
     if car:
         ou[OtherInfo.car] = car
     if house:
-        ou[OtherInfo.house] = house 
+        ou[OtherInfo.house] = house
+    if mobile:
+        ou[OtherInfo.mobile] = mobile
+    if wx:
+        ou[OtherInfo.wx] = wx
+    if qq:
+        ou[OtherInfo.qq] = qq
+    if email:
+        ou[OtherInfo.email] = email
 
     s = DBSession()
     s.query(OtherInfo).filter(OtherInfo.id == int(uid)).update(ou)
@@ -1515,7 +1524,9 @@ def see_email(eid=None, cuid=None):
     s.commit()
     s.close()
 
-    key = 'email_%d*'%int(cuid)
+    key = 'mail_%d_1*'%int(cuid)
+    cache.delpat(key)
+    key = 'mail_unread_%d*'%int(cuid)
     cache.delpat(key)
 
     return True
@@ -1665,14 +1676,16 @@ def sendemail(uid=None, cuid=None, content=None, eid=None, kind=0, s=None):
     if not f:
         s.close()
 
-    key = 'email_unread_%d' % uid
+    key = 'mail_unread_%d' % uid
     val = cache.get(key)
     if val:
-        cache.set(key, val+1, conf.redis_timeout)
+        v = json.loads(val)
+        v = int(v)
+        cache.set(key, v+1, conf.redis_timeout)
 
-    key = 'mail_%d*'%cuid
+    key = 'mail_%d_2%s'%(cuid, '*')
     cache.delpat(key)
-    key = 'mail_%d*'%uid
+    key = 'mail_%d_1%s'%(uid, '*')
     cache.delpat(key)
 
     return 0
@@ -1707,6 +1720,9 @@ def del_email(uid=None, eid=None, s=None):
         key = 'mail_%d*'%uid
         cache.delpat(key)
         return True
+
+    key = 'mail_unread_%d' % uid
+    cache.del_(key)
 
     if not f:
         s.close()
@@ -2423,13 +2439,15 @@ def detail_zhenghun(zid=None, s=None):
 def wx_login_and_regist(unionid=None, sex=None, nick_name=None, src=None):
     if not unionid:
         return None
+    '''
     key = 'unionid_%s' % unionid
     val = cache.get(key)
     if val:
         cache.set(key, val, conf.redis_timeout)
         v = json.loads(val)
         return v
-
+    '''
+    sex = int(sex)
     s = DBSession()
     c = and_(True, User.unionid == unionid)
     r = s.query(User).filter(c).first()
@@ -2513,8 +2531,10 @@ def wx_login_and_regist(unionid=None, sex=None, nick_name=None, src=None):
 
     s.close()
 
+    '''
     val = json.dumps(D)
     cache.set(key, val, conf.redis_timeout)
+    '''
 
     key = 'new_%d*' % sex
     cache.delpat(key)
@@ -2524,7 +2544,7 @@ def email_unread(uid=None):
     if not uid:
         return 0
     uid = int(uid)
-    key = 'email_unread_%d' % uid
+    key = 'mail_unread_%d' % uid
     val = cache.get(key)
     if val:
         cache.set(key, val, conf.redis_timeout)
@@ -2538,6 +2558,31 @@ def email_unread(uid=None):
     s.close()
     return r
 
+def yanyuan_reply(cuid, uid, eid, kind):
+    if not cuid or not uid or not eid or not kind:
+        return None
+    key = 'mail_%s*' % str(cuid)
+    cache.delpat(key)
+    key = 'mail_%s*' % str(uid)
+    cache.delpat(key)
+    key = 'mail_unread_%d' % int(cuid)
+    val = cache.get(key)
+    if val:
+        v = json.loads(val)
+        v = v-1 if v > 0 else 0
+        val = json.dumps(v)
+        cache.set(key, val, conf.redis_timeout)
+
+    cuid, uid, eid, kind = int(cuid), int(uid), int(eid), int(kind)
+    s = DBSession()
+    r = s.query(Email).filter(Email.id == eid).first() 
+    if r:
+        r.read_ = 1
+        s.commit()
+    cnt = conf.yanyuan_reject if kind == 0  else conf.yanyuan_accept
+    r = sendemail(uid=uid, cuid=cuid, content=cnt, kind=1, s=s)
+    s.close()
+    return True if r == 0 else None
 
 
 __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
@@ -2551,7 +2596,7 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'city_zhenghun', 'detail_zhenghun', 'wx_login_and_regist',
          'delimg', 'seeother', 'sendemail', 'yanyuan', 'yanyuan_check',
          'email', 'latest_conn', 'sawother', 'del_email', 'email_unread',
-         'see_email']
+         'see_email', 'yanyuan_reply']
 
 
 if __name__ == '__main__':

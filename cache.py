@@ -23,7 +23,10 @@ class Cache():
         r = self.rds.flushall()
     def delpat(self, k): 
         a = self.rds.keys(k)
-        self.rds.delete(*a)
+        p = self.rds.pipeline(transaction=False)
+        for e in a:
+            p.delete(e)
+        p.execute()
 
 cache = Cache()
 
@@ -38,6 +41,10 @@ if __name__ == '__main__':
     v = cache.get(k2)
     print(v)
     cache.delpat('aaa_*')
+    v = cache.get(k1)
+    print(v)
+    v = cache.get(k2)
+    print(v)
 #   r = cache.get('user_tanqiang_123')
 #   print(r)
     

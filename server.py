@@ -68,33 +68,47 @@ class IndexNewHandler(tornado.web.RequestHandler):
 class FindHandler(tornado.web.RequestHandler):
     def post(self):
         sex          = self.get_argument('sex', None)
-        sex          = int(sex) if sex else -1
+#       sex          = int(sex) if sex else -1
         agemin       = self.get_argument('agemin', None)
-        agemin       = int(agemin) if agemin else -1
+#       agemin       = int(agemin) if agemin else -1
         agemax       = self.get_argument('agemax', None)
-        agemax       = int(agemax) if agemax else -1
+#       agemax       = int(agemax) if agemax else -1
         cur1         = self.get_argument('cur1',    None)
         cur2         = self.get_argument('cur2',    None)
         ori1         = self.get_argument('ori1',    None)
         ori2         = self.get_argument('ori2',    None)
         degree       = self.get_argument('degree', None)
-        degree       = int(degree) if degree else -1
+#       degree       = int(degree) if degree else -1
         salary       = self.get_argument('salary', None)
-        salary       = int(salary) if salary else -1
+#       salary       = int(salary) if salary else -1
         xz           = self.get_argument('xingzuo', None)
         sx           = self.get_argument('shengxiao', None)
         limit        = self.get_argument('limit', None)
-        limit        = int(limit) if limit else -1
+#       limit        = int(limit) if limit else -1
         page         = self.get_argument('page', None)
-        page         = int(page) if page else -1
+#       page         = int(page) if page else -1
         next_        = self.get_argument('next', None)
-        next_        = int(next_) if next_ else -1
-        if agemin > agemax:
+#       next_        = int(next_) if next_ else -1
+        if agemin and agemax and agemin > agemax:
             agemin, agemax = agemax, agemin
         d = {}
-        c, r = find_users(sex, agemin, agemax, cur1, cur2, ori1, ori2,\
+        print('sex=', sex, not sex)
+        print('agemin=', agemin, not agemin)
+        print('agemax=', agemax, not agemax)
+        print('cur1=', cur1, not cur1)
+        print('cur2=', cur2, not cur2)
+        print('ori1=', ori1, not ori1)
+        print('ori2=', ori2, not ori2)
+        print('degree=', degree, not degree)
+        print('salary=', salary, not salary)
+        print('xz=', xz, not xz)
+        print('sx=', sx, not sx)
+        print('limit=', limit, not limit)
+        print('page=', page, not page)
+        print('next=', next_, not next_)
+        c, r, page = find_users(sex, agemin, agemax, cur1, cur2, ori1, ori2,\
                           degree, salary, xz, sx, limit, page, next_)
-        d = {'code': 0, 'msg':'ok', 'count':c, 'data':r}
+        d = {'code': 0, 'msg':'ok', 'count':c, 'data':r, 'page': page}
         if conf.debug:
             print(d)
         d = json.dumps(d)

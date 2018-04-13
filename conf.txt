@@ -29,13 +29,17 @@ new_female=4
 isee_limit=50
 seeme_limit=50
 icare_limit=100
-dating_page=6
-dating_limit=6
-freq_conn=6
-zhenghun_page=6
-zhenghun_limit=6
+dating_page=1
+dating_limit=1
+freq_conn=1
+zhenghun_page=1
+zhenghun_limit=1
 #超过50就不记录了
 look_limit=50
+
+[find]
+page=1
+limit=1
 
 [digest]
 digest_salt=

@@ -35,6 +35,9 @@ class Picconf():
         self.toffset_zhenghun_limit= p.getint('toffset', 'zhenghun_limit')
         self.toffset_look_limit  = p.getint('toffset', 'look_limit')
 
+        self.page            = p.getint('find', 'page')
+        self.limit           = p.getint('find', 'limit')
+
         self.digest_salt     = p.get('digest', 'digest_salt')
 
         self.table_user      = p.get('table', 'table_user')

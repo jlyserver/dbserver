@@ -390,7 +390,7 @@ def get_ctx_info(uid, clean=False, s=None):
     if not f:
         s = DBSession()
     N = s.query(User).count()
-    c['total'] = N
+    c['count'] = N
     r = s.query(User).filter(User.id == uid).first()
     if not r:
         if not f:
@@ -617,7 +617,7 @@ def query_new(t, sex, limit, page, next_):
         return v
 
     s = DBSession()
-    r = s.query(User).filter(User.sex == sex).filter(User.regist_time >= t).limit(limit).offset(page*next_)
+    r = s.query(User).filter(User.sex == sex).filter(User.regist_time >= t).order_by(desc(User.last_login)).limit(limit).offset(page*next_)
     ids = [e.id for e in r]
     if not ids:
         s.close()
@@ -665,18 +665,29 @@ next_:     分页, 0=第一页 1=第二页
 def find_users(sex=None,  agemin=None, agemax=None, cur1=None, cur2=None,\
                ori1=None, ori2=None,   degree=None, salary=None,\
                xz=None,   sx=None, limit=8, page=12, next_=0):
-    limit = 8 if limit < 1 else limit
-    page  = 12 if page < 1 else page
+    print('limit=', limit)
+    print('page=', page)
+    print('next=', next_)
+    if not next_:
+        next_ = 0
+    if limit:
+        limit = int(limit)
+    if page:
+        page = int(page)
+    if next_:
+        next_ = int(next_)
+    limit = conf.limit if limit < 1 else limit
+    page  = conf.page if page < 1 else page
     next_ = 0 if next_ < 1 else next_
     s = DBSession()
     t = s.query(User)
-    if sex and sex in [1,2]:
+    if sex and int(sex) in [1,2]:
         sex = int(sex)
         t = t.filter(User.sex == sex)
-    if agemin and agemin >= 18:
+    if agemin and int(agemin) >= 18:
         agemin = int(agemin)
         t = t.filter(User.age >= agemin)
-    if agemax and agemax >= 18:
+    if agemax and int(agemax) >= 18:
         agemax = int(agemax)
         t = t.filter(User.age <= agemax)
     if cur1:
@@ -698,11 +709,11 @@ def find_users(sex=None,  agemin=None, agemax=None, cur1=None, cur2=None,\
     if salary and int(salary) in [i for i in xrange(7) if i > 0]:
         t = t.filter(User.salary == int(salary))
     count = t.count()
-    r = t.limit(limit).offset(page*next_)
+    r = t.order_by(desc(User.last_login)).limit(limit).offset(page*next_)
 
     ids = [e.id for e in r]
     if not ids:
-        return 0, []
+        return 0, [], page
     m = s.query(Statement).filter(Statement.id.in_(ids)).all()
     m_ = {}
     for e in m:
@@ -720,7 +731,7 @@ def find_users(sex=None,  agemin=None, agemax=None, cur1=None, cur2=None,\
         D[e.id] = {'user':e.dic_return2(), 'pic':pic, 'statement':st}
     s.close()
     arr = [D[e] for e in D] if D else []
-    return count, arr
+    return count, arr, page
 
 
 def edit_statement(uid, cnt):
@@ -1771,7 +1782,7 @@ def list_dating(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=None,
     if not r:
         if not f:
             s.close()
-        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
+        return {'page':page, 'arr':[], 'count': 0, 'next': next_}
     tmp = {}
     for e in r:
         tmp[e.userid] = 1
@@ -1820,7 +1831,7 @@ def list_dating(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=None,
         a.append(t)
     if not f:
         s.close()
-    return {'page':page, 'arr':a, 'total': n, 'next': next_}
+    return {'page':page, 'arr':a, 'count': n, 'next': next_}
 
 '''
 我发起的约会
@@ -1832,7 +1843,7 @@ def sponsor_dating(uid=None, page=None, limit=None, next_=None,  s=None):
     next_ = 0 if not next_ else int(next_)
 
     if not uid or not uid.isdigit():
-        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
+        return {'page':page, 'arr':[], 'count': 0, 'next': next_}
    
     f = s
     if not f:
@@ -1843,7 +1854,7 @@ def sponsor_dating(uid=None, page=None, limit=None, next_=None,  s=None):
     if not r:
         if not f:
             s.close()
-        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
+        return {'page':page, 'arr':[], 'count': 0, 'next': next_}
     tmp = {}
     for e in r:
         tmp[e.userid] = 1
@@ -1892,7 +1903,7 @@ def sponsor_dating(uid=None, page=None, limit=None, next_=None,  s=None):
         a.append(t)
     if not f:
         s.close()
-    return {'page':page, 'arr':a, 'total': n, 'next': next_}
+    return {'page':page, 'arr':a, 'count': n, 'next': next_}
 
 '''
 参与的约会
@@ -1904,7 +1915,7 @@ def participate_dating(uid, page=None, limit=None, next_=None,  s=None):
     limit = conf.toffset_dating_limit if not limit else int(limit)
     next_ = 0 if not next_ else int(next_)
     if not uid or not uid.isdigit():
-        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
+        return {'page':page, 'arr':[], 'count': 0, 'next': next_}
     
     f = s
     if not f:
@@ -1914,13 +1925,13 @@ def participate_dating(uid, page=None, limit=None, next_=None,  s=None):
     if not r:
         if not f:
             s.close()
-        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
+        return {'page':page, 'arr':[], 'count': 0, 'next': next_}
     ids = [e.dating_id for e in  r]
     rd = s.query(Dating).filter(Dating.id.in_(ids)).filter(Dating.valid_state != 2).all()
     if not rd:
         if not f:
             s.close()
-        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
+        return {'page':page, 'arr':[], 'count': 0, 'next': next_}
     ids = [e.userid for e in rd]
     pu = s.query(Picture).filter(Picture.id.in_(ids)).all()
     p_m = {}
@@ -1947,7 +1958,7 @@ def participate_dating(uid, page=None, limit=None, next_=None,  s=None):
 
     if not f:
         s.close()
-    return {'page':page, 'arr':a, 'total': n, 'next': next_}
+    return {'page':page, 'arr':a, 'count': n, 'next': next_}
 
 def create_dating(uid=None, age=18, sjt=6, dt=None,\
         loc1=None, loc2=None, locd='', obj=2, num=1, fee=0, bc='',\
@@ -2198,7 +2209,7 @@ def list_zhenghun(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=Non
     if not r:
         if not f:
             s.close()
-        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
+        return {'page':page, 'arr':[], 'count': 0, 'next': next_}
     tmp = {}
     for e in r:
         tmp[e.userid] = 1
@@ -2238,7 +2249,7 @@ def list_zhenghun(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=Non
         a.append(t)
     if not f:
         s.close()
-    return {'page':page, 'arr':a, 'total': n, 'next': next_}
+    return {'page':page, 'arr':a, 'count': n, 'next': next_}
 
 
 def create_zhenghun(uid=None, loc1=None, \
@@ -2304,7 +2315,7 @@ def remove_zhenghun(zid=None):
 
 def sponsor_zhenghun(uid=None, page=None, limit=None, next_=None,  s=None):
     if not uid:
-        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
+        return {'page':page, 'arr':[], 'count': 0, 'next': next_}
 
     page = conf.toffset_zhenghun_page if not page else int(page)
     limit = conf.toffset_zhenghun_limit if not limit else int(limit)
@@ -2318,7 +2329,7 @@ def sponsor_zhenghun(uid=None, page=None, limit=None, next_=None,  s=None):
     if not r:
         if not f:
             s.close()
-        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
+        return {'page':page, 'arr':[], 'count': 0, 'next': next_}
 
     tmp = {}
     for e in r:
@@ -2358,16 +2369,16 @@ def sponsor_zhenghun(uid=None, page=None, limit=None, next_=None,  s=None):
         a.append(t)
     if not f:
         s.close()
-    return {'page':page, 'arr':a, 'total': n, 'next': next_}
+    return {'page':page, 'arr':a, 'count': n, 'next': next_}
 
 def city_zhenghun(uid=None, page=None, limit=None, next_=None):
     if not uid:
-        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
+        return {'page':page, 'arr':[], 'count': 0, 'next': next_}
     s = DBSession()
     u = s.query(User).filter(User.id == uid).first()
     if not u:
         s.close()
-        return {'page':page, 'arr':[], 'total': 0, 'next': next_}
+        return {'page':page, 'arr':[], 'count': 0, 'next': next_}
     loc1 = u.curr_loc1
     loc2 = u.curr_loc2
 
@@ -2600,10 +2611,5 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
 
 
 if __name__ == '__main__':
-    r = see_email(eid=32, cuid=20)
-    print(r)
-'''
-    r = create_dating(name='123', uid=19, age=18, sex=1, sjt=6, dt='2018-04-06 18:30:00',\
-        loc1='四川', loc2='成都', locd='郭家桥西街', obj=2, num=1, fee=0, bc='',\
-        valid_time=1)
-'''
+    pass
+#   r = find_users(sex='', agemin='18', agemax='34', cur1='四川', cur2='成都', ori1='四川', ori2='绵阳', degree)

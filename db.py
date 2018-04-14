@@ -1415,6 +1415,32 @@ def yanyuan_check(uid=None, cuid=None, s=None):
         cache.set(key, 1, conf.redis_timeout)
     return True if r else None
 
+def guanzhu_check(uid=None, cuid=None, kind=None, s=None):
+    if not uid or not cuid or not kind:
+        return None
+    if uid == cuid:
+        return None
+    cuid, uid, kind = int(cuid), int(uid), int(kind)
+    if kind not in [0,1]:
+        return None
+    f = s
+    if not f:
+        s = DBSession()
+    c = and_(Care.from_id == cuid, Care.to_id == uid)
+    r = s.query(Care).filter(c).first()
+    if r:
+        if kind == 0:
+            s.query(Care).filter(Care.id == r.id).delete(synchronize_session=False)
+            s.commit()
+    else:
+        if kind == 1:
+            care = Care(0, cuid, uid)
+            s.add(care)
+            s.commit()
+    if not f:
+        s.close()
+    return {'guanzhu':kind}
+
 #kind=1 收件 !=1 发件
 def __mail(kind=1, uid=None, page=None, next_=None, s=None):
     if not uid or not page or next_ < 0:
@@ -2470,6 +2496,8 @@ def wx_login_and_regist(unionid=None, sex=None, nick_name=None, src=None):
         D['uid'] = uid
         if nick_name:
             r.nick_name = nick_name
+        if int(sex) in [1, 2]:
+            r.sex = int(sex)
         ft  = time.localtime()
         now = time.strftime('%Y-%m-%d %H:%M:%S', ft)
         r.last_login = now
@@ -2596,6 +2624,37 @@ def yanyuan_reply(cuid, uid, eid, kind):
     return True if r == 0 else None
 
 
+def update_free_fee():
+    t = time.localtime()
+    t = time.strftime('%H:%M:%S', t)
+    if t != '00:00:00':
+        return -1
+    s = DBSession()
+    s.query(User_account).update({User_account.free_bean:conf.free_bean})
+    s.commit()
+    s.close()
+
+def get_sex_by_uid(uid=None):
+    if not uid:
+        return None
+    key = 'sex_by_uid_%s' % str(uid)
+    val = cache.get(key)
+    if val:
+        v = json.loads(val)
+        cache.set(key, val, conf.redis_timeout)
+        return v
+
+    s = DBSession()
+    r = s.query(User).filter(User.id == int(uid)).first()
+    s.close()
+
+    if r:
+        val = r.sex
+        val = json.dumps(val)
+        cache.set(key, val, conf.redis_timeout)
+
+    return None  if not r else r.sex
+
 __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'user_regist', 'query_user', 'query_user_login', 'get_user_info',
          'update_basic','get_ctx_info', 'edit_statement', 'edit_other',
@@ -2607,7 +2666,8 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'city_zhenghun', 'detail_zhenghun', 'wx_login_and_regist',
          'delimg', 'seeother', 'sendemail', 'yanyuan', 'yanyuan_check',
          'email', 'latest_conn', 'sawother', 'del_email', 'email_unread',
-         'see_email', 'yanyuan_reply']
+         'see_email', 'yanyuan_reply', 'update_free_fee', 'get_sex_by_uid',
+         'sendcare', 'guanzhu_check']
 
 
 if __name__ == '__main__':

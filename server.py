@@ -89,6 +89,7 @@ class FindHandler(tornado.web.RequestHandler):
 #       page         = int(page) if page else -1
         next_        = self.get_argument('next', None)
 #       next_        = int(next_) if next_ else -1
+        uid          = self.get_argument('uid', None)
         if agemin and agemax and agemin > agemax:
             agemin, agemax = agemax, agemin
         d = {}
@@ -106,9 +107,13 @@ class FindHandler(tornado.web.RequestHandler):
         print('limit=', limit, not limit)
         print('page=', page, not page)
         print('next=', next_, not next_)
+        print('uid=', uid, not uid)
+        sex = get_sex_by_uid(uid=uid)
         c, r, page = find_users(sex, agemin, agemax, cur1, cur2, ori1, ori2,\
                           degree, salary, xz, sx, limit, page, next_)
         d = {'code': 0, 'msg':'ok', 'count':c, 'data':r, 'page': page}
+        if sex:
+            d['sex'] = sex
         if conf.debug:
             print(d)
         d = json.dumps(d)
@@ -242,6 +247,25 @@ class YanyuanCheckHandler(tornado.web.RequestHandler):
                 d = {'code': -1, 'msg': '参数不正确'}
             else:
                 d = {'code': 0, 'msg': 'ok', 'data':{'yanyuan':1}}
+        d = json.dumps(d)
+        self.write(d)
+
+class GuanzhuCheckHandler(tornado.web.RequestHandler):
+    def post(self):
+        uid  = self.get_argument('uid', None)
+        cuid = self.get_argument('cuid',None)
+        kind = self.get_argument('kind', None)
+        d = {} 
+        if not uid or not cuid or not kind: 
+            d = {'code': -1, 'msg': '参数不正确'}
+        elif uid == cuid:
+            d = {'code': -1, 'msg': '自己不用关注自己'}
+        else:
+            r = guanzhu_check(uid=uid, cuid=cuid, kind=kind)
+            if not r:
+                d = {'code': -1, 'msg': '参数不正确'}
+            else:
+                d = {'code': 0, 'msg': 'ok', 'data':r}
         d = json.dumps(d)
         self.write(d)
 
@@ -898,6 +922,7 @@ if __name__ == "__main__":
         ('/seeme', SeeMeHandler),
         ('/icare', ICareHandler),
         ('/sendcare', SendCareHandler),
+        ('/guanzhu_check', GuanzhuCheckHandler),
         ('/new', IndexNewHandler),
         ('/find', FindHandler),
         ('/email', EmailHandler),
@@ -927,4 +952,5 @@ if __name__ == "__main__":
     application = tornado.web.Application(handler, **settings)
     http_server = tornado.httpserver.HTTPServer(application)
     http_server.listen(options.port)
+    tornado.ioloop.PeriodicCallback(update_free_fee, 60000).start()
     tornado.ioloop.IOLoop.instance().start()

@@ -1492,8 +1492,9 @@ def __mail(kind=1, uid=None, page=None, next_=None, s=None):
 
     rp = s.query(Picture).filter(Picture.id.in_(ids)).all()
     p_m = {}
-    for e in p_m:
-        p_m[e.id] = e.url0
+    for e in rp:
+        tmp = e.dic_array()
+        p_m[e.id] = tmp['arr'][0]
 
     e_m = {}
     for e in r:
@@ -1717,8 +1718,9 @@ def sendemail(uid=None, cuid=None, content=None, eid=None, kind=0, s=None):
     val = cache.get(key)
     if val:
         v = json.loads(val)
-        v = int(v)
-        cache.set(key, v+1, conf.redis_timeout)
+        v = int(v) + 1
+        v = json.dumps(v)
+        cache.set(key, v, conf.redis_timeout)
 
     key = 'mail_%d_2%s'%(cuid, '*')
     cache.delpat(key)
@@ -1733,6 +1735,7 @@ def sendemail(uid=None, cuid=None, content=None, eid=None, kind=0, s=None):
 def del_email(uid=None, eid=None, s=None):
     if not uid or not eid:
         return None
+    uid, eid = int(uid), int(eid)
     f = s
     if not f:
         s = DBSession()
@@ -2586,8 +2589,9 @@ def email_unread(uid=None):
     key = 'mail_unread_%d' % uid
     val = cache.get(key)
     if val:
+        v = json.loads(val)
         cache.set(key, val, conf.redis_timeout)
-        return val
+        return v
 
     s = DBSession()
     c = and_(Email.to_id == uid, Email.to_del != 1, Email.read_ == 0)

@@ -22,9 +22,8 @@ create table if not exists user
     ori_loc1  varchar(8) default '', /*籍贯所在省(直辖市)*/
     ori_loc2  varchar(8) default '', /*籍贯所在市(区)*/
     state tinyint default 0, /*征友状态 0=征友进行中 1=找到意中人*/
-    regist_time timestamp default CURRENT_TIMESTAMP not null,
-    last_login  timestamp,
-    openid varchar(32) default '', /*微信openid*/
+    regist_time timestamp not null,
+    last_login  timestamp default CURRENT_TIMESTAMP not null,
     unionid varchar(32) default '', /*微信unionid*/
     valid_state tinyint not null default 0, /*状态 0=合法 1=被禁止*/
     msg varchar(32) default '' /*被禁止的原因*/
@@ -72,7 +71,7 @@ create table if not exists picture
 (
     id int unsigned primary key,
     count smallint default 9, /*还能上传多少张图片*/  
-    url0 varchar(64) default '', /*头像图片*/
+    url0 varchar(192) default '', /*头像图片*/
     url1 varchar(64) default '',
     url2 varchar(64) default '',
     url3 varchar(64) default '',

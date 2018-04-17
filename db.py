@@ -2537,6 +2537,9 @@ def wx_login_and_regist(unionid=None, sex=None, nick_name=None, src=None):
         u = User(name=name,sex=sex, unionid=unionid)
         s.add(u)
         s.commit()
+
+        key = 'new_%d*'% sex
+        cache.delpat(key)
         ru = s.query(User).filter(User.unionid == unionid).first()
         uid = ru.id
         D['uid'] = uid

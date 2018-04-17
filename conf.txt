@@ -38,8 +38,8 @@ zhenghun_limit=4
 look_limit=50
 
 [find]
-page=1
-limit=1
+page=8
+limit=8
 
 [digest]
 digest_salt=

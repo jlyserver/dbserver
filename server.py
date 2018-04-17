@@ -90,8 +90,6 @@ class FindHandler(tornado.web.RequestHandler):
         next_        = self.get_argument('next', None)
 #       next_        = int(next_) if next_ else -1
         uid          = self.get_argument('uid', None)
-        if agemin and agemax and agemin > agemax:
-            agemin, agemax = agemax, agemin
         d = {}
         print('sex=', sex, not sex)
         print('agemin=', agemin, not agemin)
@@ -108,12 +106,12 @@ class FindHandler(tornado.web.RequestHandler):
         print('page=', page, not page)
         print('next=', next_, not next_)
         print('uid=', uid, not uid)
-        sex = get_sex_by_uid(uid=uid)
+        usex = get_sex_by_uid(uid=uid)
         c, r, page = find_users(sex, agemin, agemax, cur1, cur2, ori1, ori2,\
                           degree, salary, xz, sx, limit, page, next_)
         d = {'code': 0, 'msg':'ok', 'count':c, 'data':r, 'page': page}
-        if sex:
-            d['sex'] = sex
+        if usex:
+            d['sex'] = usex
         if conf.debug:
             print(d)
         d = json.dumps(d)

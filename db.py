@@ -390,7 +390,7 @@ def get_ctx_info(uid, clean=False, s=None):
     if not f:
         s = DBSession()
     N = s.query(User).count()
-    c['count'] = N
+    c['total'] = N
     r = s.query(User).filter(User.id == uid).first()
     if not r:
         if not f:

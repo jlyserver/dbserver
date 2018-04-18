@@ -822,10 +822,12 @@ def seeother(kind=None, uid=None, cuid=None):
     else:
         if not pub_:
             s.close()
-            return {'code':-1, 'msg':'用户为公开该联系方式'}
+            return {'code':-1, 'msg':'用户未公开该联系方式'}
+        '''
         if not vry_:
             s.close()
-            return {'code':-1, 'msg':'用户为填写该联系方式'}
+            return {'code':-1, 'msg':'用户未填写该联系方式'}
+        '''
             
         fee = fee_table[kind] 
         if ru.free >= fee:

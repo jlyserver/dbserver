@@ -2681,5 +2681,7 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
 
 
 if __name__ == '__main__':
-    pass
-#   r = find_users(sex='', agemin='18', agemax='34', cur1='四川', cur2='成都', ori1='四川', ori2='绵阳', degree)
+    r = find_users(sex='1', agemin='', agemax='', cur1='', cur2=None,\
+            ori1='', ori2=None, degree='', salary='', \
+            xz='', sx='', limit=None, page=None, next_='0')
+    print(r)

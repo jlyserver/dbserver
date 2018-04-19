@@ -814,18 +814,6 @@ class CreateZhenghunHandler(tornado.web.RequestHandler):
         d = json.dumps(d)
         self.write(d)
         
-class RemoveZhenghunHandler(tornado.web.RequestHandler):
-    def post(self):
-        zid    = self.get_argument('zid', None)
-        d = {'code': -1 , 'msg': '参数不正确'}
-        if zid:
-            r = remove_zhenghun(zid)
-            if r:
-                d = {'code': 0, 'msg': 'ok'}
-        d = json.dumps(d)
-        self.write(d)
-        
-
 #我发起的征婚
 class SponsorZhenghunHandler(tornado.web.RequestHandler):
     def post(self):
@@ -868,7 +856,9 @@ class RemoveZhenghunHandler(tornado.web.RequestHandler):
         uid = self.get_argument('uid', None)
         d = {'code': -1 , 'msg': '参数不正确'}
         if zid and uid:
-            d = remove_zhenghun(zid=zid, uid=uid)
+            r = remove_zhenghun(zid=zid, uid=uid)
+            if r:
+                d = {'code': 0, 'msg': 'ok'}
         d = json.dumps(d)
         self.write(d)
 
@@ -953,7 +943,6 @@ if __name__ == "__main__":
         ('/sponsor_zhenghun', SponsorZhenghunHandler),
         ('/city_zhenghun', CityZhenghunHandler),
         ('/detail_zhenghun', DetailZhenghunHandler),
-        ('/remove_zhenghun', RemoveZhenghunHandler),
         ('/email_unread', EmailUnReadHandler),
         ('/wxlogin', WxLoginHandler),
         ('/yanyuan_reply', YanYuanReplyHandler),

@@ -2330,11 +2330,12 @@ def create_zhenghun(uid=None, loc1=None, \
     s.close()
     return {'code': 0, 'msg': 'ok'}
 
-def remove_zhenghun(zid=None):
-    if not zid:
+def remove_zhenghun(zid=None, uid=None):
+    if not zid or not uid:
         return None
     s = DBSession()
-    s.query(Zhenghun).filter(Zhenghun.id == zid).delete(synchronize_session=False)
+    c = and_(Zhenghun.id == zid, Zhenghun.userid == uid)
+    s.query(Zhenghun).filter(c).delete(synchronize_session=False)
     try:
         s.commit()
     except:

@@ -1298,7 +1298,7 @@ def icare(uid, s=None):
     m_p = {}
     for e in r:
         tmp = e.dic_array()
-        m_p[e.id] = e['arr'][0]
+        m_p[e.id] = tmp['arr'][0]
     N = len(a1)
     for e in a1:
         [t1, t2] = str(e.time_).split(' ')

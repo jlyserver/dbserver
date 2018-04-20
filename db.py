@@ -1297,7 +1297,8 @@ def icare(uid, s=None):
     r = s.query(Picture).filter(Picture.id.in_(ids)).all()
     m_p = {}
     for e in r:
-        m_p[e.id] = e.url0
+        tmp = e.dic_array()
+        m_p[e.id] = e['arr'][0]
     N = len(a1)
     for e in a1:
         [t1, t2] = str(e.time_).split(' ')
@@ -1703,8 +1704,8 @@ def sendemail(uid=None, cuid=None, content=None, eid=None, kind=0, s=None):
         fee = conf.send_email_fee
         if ru.free >= fee:
             ru.free = ru.free - fee
-        elif ru.num >= fee:
-            ru.num = ru.num - fee
+        elif ru.num + ru.free >= fee:
+            ru.num = ru.num + ru.free - fee
         else:
             if not f:
                 s.close()
@@ -1779,7 +1780,7 @@ def list_dating(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=None,
     page = conf.toffset_dating_page if not page else int(page)
     limit = conf.toffset_dating_limit if not limit else int(limit)
     next_ = 0 if not next_ else int(next_)
-    c = True
+    c = and_(True, Dating.valid_state == 0)
     if sex:
         sex = int(sex)
     if sex and sex in [0, 1]:
@@ -2010,6 +2011,18 @@ def create_dating(uid=None, age=18, sjt=6, dt=None,\
         return False
     name = r.nick_name
     sex =  1 if r.sex == 1 else 0
+
+    ra = s.query(User_account).filter(User_account.id == uid).first()
+    if not ra:
+        s.close()
+        return False
+    if ra.free >= conf.yuehui_fee:
+        ra.free = ra.free - conf.yuehui_fee
+    elif ra.num + ra.free >= conf.yuehui_fee:
+        ra.num = ra.num + ra.free - conf.yuehui_fee
+    else:
+        s.close()
+        return False
     d = Dating(name=name, uid=uid, age=age, sex=sex, sjt=sjt, dt=dt,\
                loc1=loc1, loc2=loc2, locd=locd, obj=obj, num=num,\
                fee=fee, bc=bc, valid_time=valid_time)
@@ -2207,11 +2220,14 @@ def list_zhenghun(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=Non
     limit = conf.toffset_zhenghun_limit if not limit else int(limit)
     next_ = 0 if not next_ else int(next_)
     c = True
+    c = and_(c, Zhenghun.valid_state == 0)#帖子有效
+    sex = None if sex == u'不限' else sex
     if sex:
         sex = int(sex)
     if sex and sex in [0, 1]:
         c = and_(c, Zhenghun.sex == sex)
-
+    age1 = None if age1 == u'不限' else age1
+    age2 = None if age2 == u'不限' else age2
     if age1:
         age1 = int(age1)
     if age2:
@@ -2301,7 +2317,7 @@ def create_zhenghun(uid=None, loc1=None, \
     if not ru:
         s.close()
         return err
-    name = ru.nick_name if ru.nick_name else '新用户%s'%ru.mobile[-4:]
+    name = ru.nick_name
     age  = ru.age
     sex  = 1 if ru.sex == 1 else 0
 
@@ -2311,8 +2327,8 @@ def create_zhenghun(uid=None, loc1=None, \
         return err
     if ra.free >= conf.zhenghun_fee:
         ra.free = ra.free - conf.zhenghun_fee
-    elif ra.num >= conf.zhenghun_fee:
-        ra.num = ra.num - conf.zhenghun_fee
+    elif ra.num + ra.free >= conf.zhenghun_fee:
+        ra.num = ra.num  + ra.free - conf.zhenghun_fee
     else:
         s.close()
         return {'code': -1, 'msg': '余额不足'}
@@ -2334,14 +2350,21 @@ def remove_zhenghun(zid=None, uid=None):
     if not zid or not uid:
         return None
     s = DBSession()
-    c = and_(Zhenghun.id == zid, Zhenghun.userid == uid)
-    s.query(Zhenghun).filter(c).delete(synchronize_session=False)
+    r = s.query(Zhenghun).filter(Zhenghun.id == zid).first()
+    if not r:
+        s.close()
+        return True
+    if r.userid != uid:
+        s.close()
+        return True
+    r.valid_state = 2
+    r.msg = '用户删除'
     try:
         s.commit()
     except:
         s.close()
         print('zhenghun remove: failed zid=%s' % str(zid))
-        return None
+        return False
     s.close()
     return True
 

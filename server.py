@@ -652,7 +652,7 @@ class SendCareHandler(tornado.web.RequestHandler):
         else:
             uid, cuid, kind = int(uid),int(cuid),int(kind)
             r = sendcare(uid=uid, cuid=cuid, kind=kind)
-            if not r:
+            if r:
                 d = {'code': 0, 'msg':'ok'}
             else:
                 d = {'code': -1, 'msg': '请先登录'}

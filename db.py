@@ -455,6 +455,7 @@ def update_basic(uid=None, nick_name=None, aim=None, age=None,\
         motto=None, *hobby):
     if not uid:
         return None
+    uid = int(uid)
     u = {}
     if nick_name:
         u[User.nick_name] = nick_name
@@ -959,7 +960,7 @@ def write_img(uid=None, first=None, second=None, third=None, kind=None):
         return None
     else:
         src = '%s/%s/%s' % (first, second, third)
-        if kind == '1':
+        if kind == 1:
             r.url0 = src
         else:
             r.count = r.count - 1
@@ -1362,6 +1363,7 @@ def sendcare(uid=None, cuid=None, kind=None):
 def yanyuan(uid=None, cuid=None, s=None):
     if not uid or not cuid:
         return None
+    uid, cuid = int(uid), int(cuid)
     if uid == cuid:
         return None
 
@@ -1397,6 +1399,7 @@ def yanyuan(uid=None, cuid=None, s=None):
 def yanyuan_check(uid=None, cuid=None, s=None):
     if not uid or not cuid:
         return None
+    uid, cuid = int(uid), int(cuid)
     if uid == cuid:
         return None
 
@@ -1680,7 +1683,7 @@ def sendemail(uid=None, cuid=None, content=None, eid=None, kind=0, s=None):
         return -1
     if uid == cuid:
         return -1
-    uid, cuid = int(uid), int(cuid)
+    uid, cuid, kind = int(uid), int(cuid), int(kind)
     f = s
     if not f:
         s = DBSession()
@@ -1772,6 +1775,16 @@ def del_email(uid=None, eid=None, s=None):
     return True
 
 def list_dating(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=None, limit=None, next_=None, s=None):
+    if loc1 == u'不限':
+        loc1 = None
+    if loc2 == u'不限':
+        loc2 = None
+    if age1 == u'不限':
+        age1 = None
+    if age2 == u'不限':
+        age2 = None
+    if sex == u'不限':
+        sex = None
     if loc1:
         if loc1[:2] in ['北京','上海', '天津', '重庆']:
             loc2 = None
@@ -1876,11 +1889,11 @@ def sponsor_dating(uid=None, page=None, limit=None, next_=None,  s=None):
 
     if not uid or not uid.isdigit():
         return {'page':page, 'arr':[], 'count': 0, 'next': next_}
-   
+    uid = int(uid) 
     f = s
     if not f:
         s = DBSession()
-    c = and_(Dating.userid == uid, Dating.valid_state != 2)
+    c = and_(Dating.userid == uid, Dating.valid_state == 0)
     n = s.query(Dating).filter(c).order_by(desc(Dating.time_)).count()
     r = s.query(Dating).filter(c).order_by(desc(Dating.time_)).limit(limit).offset(page*next_)
     if not r:
@@ -1999,6 +2012,7 @@ def create_dating(uid=None, age=18, sjt=6, dt=None,\
         return None
     if not loc1 and not loc2:
         return None
+    uid = int(uid)
     age, sjt = int(age), int(sjt)
     obj, num, fee = int(obj), int(num), int(fee)
     valid_time = int(valid_time)
@@ -2040,6 +2054,7 @@ def create_dating(uid=None, age=18, sjt=6, dt=None,\
 def remove_dating(uid=None, did=None):
     if not uid or not did:
         return None
+    uid, did = int(uid), int(did)
     s = DBSession()
     r = s.query(Dating).filter(Dating.id == did).first()
     if not r:
@@ -2228,6 +2243,9 @@ def list_zhenghun(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=Non
         c = and_(c, Zhenghun.sex == sex)
     age1 = None if age1 == u'不限' else age1
     age2 = None if age2 == u'不限' else age2
+    loc1 = None if loc1 == u'不限' else loc1
+    loc2 = None if loc2 == u'不限' else loc2
+
     if age1:
         age1 = int(age1)
     if age2:

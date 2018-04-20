@@ -91,21 +91,6 @@ class FindHandler(tornado.web.RequestHandler):
 #       next_        = int(next_) if next_ else -1
         uid          = self.get_argument('uid', None)
         d = {}
-        print('sex=', sex, not sex)
-        print('agemin=', agemin, not agemin)
-        print('agemax=', agemax, not agemax)
-        print('cur1=', cur1, not cur1)
-        print('cur2=', cur2, not cur2)
-        print('ori1=', ori1, not ori1)
-        print('ori2=', ori2, not ori2)
-        print('degree=', degree, not degree)
-        print('salary=', salary, not salary)
-        print('xz=', xz, not xz)
-        print('sx=', sx, not sx)
-        print('limit=', limit, not limit)
-        print('page=', page, not page)
-        print('next=', next_, not next_)
-        print('uid=', uid, not uid)
         usex = get_sex_by_uid(uid=uid)
         c, r, page = find_users(sex, agemin, agemax, cur1, cur2, ori1, ori2,\
                           degree, salary, xz, sx, limit, page, next_)
@@ -178,7 +163,7 @@ class SendEmailHandler(tornado.web.RequestHandler):
         d = {} 
         if not uid or not cuid or not cnt: 
             d = {'code': -1, 'msg': '参数不正确'}
-        elif uid == cuid:
+        elif int(uid) == int(cuid):
             d = {'code': -1, 'msg': '自己不用给自己发信'}
         else:
             if kind:
@@ -256,7 +241,7 @@ class GuanzhuCheckHandler(tornado.web.RequestHandler):
         d = {} 
         if not uid or not cuid or not kind: 
             d = {'code': -1, 'msg': '参数不正确'}
-        elif uid == cuid:
+        elif int(uid) == int(cuid):
             d = {'code': -1, 'msg': '自己不用关注自己'}
         else:
             r = guanzhu_check(uid=uid, cuid=cuid, kind=kind)
@@ -326,7 +311,7 @@ class VerifyMobileHandler(tornado.web.RequestHandler):
         if not uid or not mobile or not re.match(p, mobile):
             d = {'code':-1, 'msg':'invalid parameters'}
         else:
-            ctx = merge_mobile(uid, mobile)
+            ctx = merge_mobile(int(uid), mobile)
             if not ctx:
                 d = {'code': -1, 'msg':'invalid parameters'}
             else:
@@ -465,7 +450,7 @@ class StatementEditHandler(tornado.web.RequestHandler):
         if not uid or not cnt:
             pass
         else:
-            r = edit_statement(uid, cnt)
+            r = edit_statement(int(uid), cnt)
             if r:
                 d = {'code': 0, 'msg': '编辑成功'}
         d = json.dumps(d)
@@ -489,6 +474,8 @@ class OtherEditHandler(tornado.web.RequestHandler):
         elif not salary and not work and not car and not house:
             pass
         else:
+            uid, salary, work, car = int(uid),int(salary),int(work),int(car)
+            house = int(house)
             r = edit_other(uid, salary, work, car, house,\
                     mobile, wx, qq, email)
             if r:
@@ -506,7 +493,7 @@ class SeeOtherHandler(tornado.web.RequestHandler):
             d = {'code': -1, 'msg':'参数不正确'}
         else:
             uid, cuid = int(uid), int(cuid)
-            d = seeother(kind=kind, uid=uid, cuid=cuid)
+            d = seeother(kind=kind, uid=int(uid), cuid=int(cuid))
         d = json.dumps(d)
         self.write(d)
 
@@ -518,7 +505,7 @@ class SawOtherHandler(tornado.web.RequestHandler):
         if not uid or not cuid:
             d = {'code': -1, 'msg':'参数不正确'}
         else:
-            d = sawother(uid=uid, cuid=cuid)
+            d = sawother(uid=int(uid), cuid=int(cuid))
         d = json.dumps(d)
         self.write(d)
 
@@ -532,6 +519,7 @@ class VerifyOtherHandler(tornado.web.RequestHandler):
         if not uid or not kind or not num:
             pass
         else:
+            uid, num = int(uid), int(num)
             r = verify_wx_qq_email(uid, num, kind)
             if r:
                 d = {'code': 0, 'msg': '验证成功', 'data': r}
@@ -549,6 +537,7 @@ class ImgHandler(tornado.web.RequestHandler):
         if not uid or not f or not s or not t or not k:
             d = {'code': -1, 'msg': '参数不正确'}
         else:
+            uid, kind = int(uid), int(kind)
             r = write_img(uid=uid, first=f, second=s, third=t, kind=k)
             if r:
                d = {'code': 0, 'msg': 'ok'}
@@ -564,7 +553,7 @@ class DelImgHandler(tornado.web.RequestHandler):
         if not uid or not src:
             d = {'code': -1, 'msg': '参数不正确'}
         else:
-            r = delimg(uid=uid, src=src)
+            r = delimg(uid=int(uid), src=src)
             if r:
                 d = {'code': 0, 'msg': 'ok'}
         d = json.dumps(d)
@@ -582,7 +571,7 @@ class PublicHandler(tornado.web.RequestHandler):
             self.write(r)
         else:
             kind, action = int(kind), int(action)
-            r = public_conn(uid, kind, action)
+            r = public_conn(int(uid), kind, action)
             if not r:
                 r = {'code': -1, 'msg': '参数错误'}
             else:
@@ -710,7 +699,7 @@ class RemoveDatingHandler(tornado.web.RequestHandler):
         if not did or not uid:
             d = {'code': -1, 'msg': '参数不正确'}
         if d['code'] == 0:
-            r = remove_dating(uid=uid, did=did)
+            r = remove_dating(uid=int(uid), did=int(did))
             if not r:
                 d = {'code': -1, 'msg': '删除失败'}
         d = json.dumps(d)
@@ -726,6 +715,7 @@ class ParticipateDatingHandler(tornado.web.RequestHandler):
         if not uid:
             d = {'code': -1, 'msg': '参数不正确'}
         if d['code'] == 0:
+            uid = int(uid)
             r = participate_dating(uid, limit=limit, page=page, next_=next_)
             d = {'code': 0, 'msg':'ok', 'data':r}
         d = json.dumps(d)
@@ -741,7 +731,7 @@ class SponsorDatingHandler(tornado.web.RequestHandler):
         if not uid:
             d = {'code': -1, 'msg': '参数不正确'}
         if d['code'] == 0:
-            r = sponsor_dating(uid, limit=limit, page=page, next_=next_)
+            r = sponsor_dating(int(uid), limit=limit, page=page, next_=next_)
             d = {'code': 0, 'msg':'ok', 'data':r}
         d = json.dumps(d)
         self.write(d)
@@ -772,6 +762,7 @@ class BaomingDatingHandler(tornado.web.RequestHandler):
         if not uid or not did:
             d = {'code':-1, 'msg':'参数不全'}
         else:
+            uid, did = int(uid), int(did)
             r = baoming_dating(uid=uid, did=did)
             if not r:
                 d = {'code':-1, 'msg': '参数不对'}
@@ -809,6 +800,7 @@ class CreateZhenghunHandler(tornado.web.RequestHandler):
         if not uid or not title or not obj1:
             d = {'code': -1, 'msg': '参数不对'}
         else:
+            uid, obj1 = int(uid), int(obj1)
             d = create_zhenghun(uid=uid,loc1=loc1, loc2=loc2, v_d=v_d,\
                     title=title, cnt=cnt, obj1=obj1)
         d = json.dumps(d)
@@ -823,7 +815,7 @@ class SponsorZhenghunHandler(tornado.web.RequestHandler):
         next_= self.get_argument('next', None)
         d = {'code': -1 , 'msg': '参数不正确'}
         if uid:
-            r = sponsor_zhenghun(uid, page, limit, next_) 
+            r = sponsor_zhenghun(int(uid), page, limit, next_) 
             d = {'code': 0, 'msg': 'ok', 'data': r}
         d = json.dumps(d)
         self.write(d)
@@ -836,7 +828,7 @@ class CityZhenghunHandler(tornado.web.RequestHandler):
         next_= self.get_argument('next', None)
         d = {'code': -1 , 'msg': '参数不正确'}
         if uid:
-            r = city_zhenghun(uid=uid, page=page, limit=limit, next_=next_)
+            r = city_zhenghun(uid=int(uid), page=page, limit=limit, next_=next_)
             d = {'code': 0, 'msg': 'ok', 'data': r}
         d = json.dumps(d)
         self.write(d)
@@ -846,7 +838,7 @@ class DetailZhenghunHandler(tornado.web.RequestHandler):
         zid = self.get_argument('zid', None)
         d = {'code': -1 , 'msg': '参数不正确'}
         if zid:
-            d = detail_zhenghun(zid=zid)
+            d = detail_zhenghun(zid=int(zid))
         d = json.dumps(d)
         self.write(d)
 
@@ -856,7 +848,7 @@ class RemoveZhenghunHandler(tornado.web.RequestHandler):
         uid = self.get_argument('uid', None)
         d = {'code': -1 , 'msg': '参数不正确'}
         if zid and uid:
-            r = remove_zhenghun(zid=zid, uid=uid)
+            r = remove_zhenghun(zid=int(zid), uid=int(uid))
             if r:
                 d = {'code': 0, 'msg': 'ok'}
         d = json.dumps(d)
@@ -869,7 +861,7 @@ class EmailUnReadHandler(tornado.web.RequestHandler):
         if not uid:
             pass
         else:
-            n = email_unread(uid=uid)
+            n = email_unread(uid=int(uid))
             d = {'code': 0, 'msg': 'ok', 'data': n}
         d = json.dumps(d)
         self.write(d)
@@ -884,7 +876,7 @@ class YanYuanReplyHandler(tornado.web.RequestHandler):
         if not cuid or not uid or not eid  or not kind:
             pass
         else:
-            r = yanyuan_reply(cuid, uid, eid, kind)
+            r = yanyuan_reply(int(cuid), int(uid), int(eid), int(kind))
             if r:
                 d = {'code': 0, 'msg': 'ok'}
         d = json.dumps(d)

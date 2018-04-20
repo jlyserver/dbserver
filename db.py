@@ -1887,7 +1887,7 @@ def sponsor_dating(uid=None, page=None, limit=None, next_=None,  s=None):
     limit = conf.toffset_dating_limit if not limit else int(limit)
     next_ = 0 if not next_ else int(next_)
 
-    if not uid or not uid.isdigit():
+    if not uid:
         return {'page':page, 'arr':[], 'count': 0, 'next': next_}
     uid = int(uid) 
     f = s
@@ -2320,7 +2320,9 @@ def list_zhenghun(sex=None, age1=None, age2=None, loc1=None, loc2=None, page=Non
 def create_zhenghun(uid=None, loc1=None, \
         loc2=None, v_d=1, title=None, cnt=None, obj1=None):
     err = {'code': -1, 'msg': '参数不对'}
-    if not uid or not title or not obj1 or not v_d:
+    if obj1 == 0:
+        pass
+    if not uid or not title or not v_d:
         return err
     if not loc1 and not loc2:
         return err
@@ -2397,8 +2399,9 @@ def sponsor_zhenghun(uid=None, page=None, limit=None, next_=None,  s=None):
     f = s
     if not f:
         s = DBSession()
-    n = s.query(Zhenghun).filter(Zhenghun.userid == uid).count()
-    r = s.query(Zhenghun).filter(Zhenghun.userid == uid).order_by(desc(Zhenghun.time_)).limit(limit).offset(page*next_)
+    c = and_(Zhenghun.userid == uid, Zhenghun.valid_state == 0)
+    n = s.query(Zhenghun).filter(c).count()
+    r = s.query(Zhenghun).filter(c).order_by(desc(Zhenghun.time_)).limit(limit).offset(page*next_)
     if not r:
         if not f:
             s.close()

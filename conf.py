@@ -70,6 +70,21 @@ class Picconf():
         self.timeout_fee        = p.getint('fee', 'timeout_fee')
         self.free_bean          = p.getint('fee', 'free_bean')
 
+        self.dating_fee_1       = p.getint('fee', 'dating_fee_1')
+        self.dating_fee_2       = p.getint('fee', 'dating_fee_2')
+        self.dating_fee_3       = p.getint('fee', 'dating_fee_3')
+        self.dating_fee_4       = p.getint('fee', 'dating_fee_4')
+        self.dating_fee_5       = p.getint('fee', 'dating_fee_5')
+        self.dating_fee_6       = p.getint('fee', 'dating_fee_6')
+        self.dating_fee_7       = p.getint('fee', 'dating_fee_7')
+
+        self.zhenghun_fee_1     = p.getint('fee', 'zhenghun_fee_1')
+        self.zhenghun_fee_2     = p.getint('fee', 'zhenghun_fee_2')
+        self.zhenghun_fee_3     = p.getint('fee', 'zhenghun_fee_3')
+        self.zhenghun_fee_4     = p.getint('fee', 'zhenghun_fee_4')
+
+
+
         self.msg_yanyuan        = p.get('msg', 'msg_yanyuan')
         self.yanyuan_reject     = p.get('msg', 'yanyuan_reject')
         self.yanyuan_accept     = p.get('msg', 'yanyuan_accept')

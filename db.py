@@ -837,8 +837,8 @@ def seeother(kind=None, uid=None, cuid=None):
             s.commit()
             s.close()
             return {'code':0, 'msg':'ok', 'data':{'account': ac, 'conn':conn}}
-        elif ru.num >= fee:
-            ru.num = ru.num - fee
+        elif ru.num + ru.free >= fee:
+            ru.num = ru.num + ru.free - fee
             ac = ru.dic_return()
             c = Consume_record(0, cuid, uid, kind+4, fee)
             s.add(c)
@@ -1687,7 +1687,7 @@ def sendemail(uid=None, cuid=None, content=None, eid=None, kind=0, s=None):
     f = s
     if not f:
         s = DBSession()
-    already = False
+    already = False if kind == 0 else True
     if eid:
         eid = int(eid)
         c = or_(Email.from_del == 0, Email.to_del == 0)
@@ -1713,6 +1713,8 @@ def sendemail(uid=None, cuid=None, content=None, eid=None, kind=0, s=None):
             if not f:
                 s.close()
             return -2
+        record = Consume_record(0, cuid, uid, 2, fee)
+        s.add(record)
 
     e = Email(id_=0, f=cuid, t=uid, c=content, k=kind)
     s.add(e)
@@ -2012,7 +2014,20 @@ def create_dating(uid=None, age=18, sjt=6, dt=None,\
         return None
     if not loc1 and not loc2:
         return None
+    ft  = time.localtime()
+    now = time.strftime('%Y-%m-%d %H:%M:%S', ft)
+    if dt < now:
+        return None
     uid = int(uid)
+    valid_time = int(valid_time) if valid_time else 1
+    fee_table = [1, conf.dating_fee_1, conf.dating_fee_2, conf.dating_fee_3,\
+                    conf.dating_fee_4, conf.dating_fee_5, conf.dating_fee_6,\
+                    conf.dating_fee_7]
+    if valid_time >= len(fee_table):
+        valid_time = len(fee_table)-1
+    elif valid_time <= 0:
+        valid_time = 1
+    F = fee_table[valid_time]
     age, sjt = int(age), int(sjt)
     obj, num, fee = int(obj), int(num), int(fee)
     valid_time = int(valid_time)
@@ -2030,19 +2045,27 @@ def create_dating(uid=None, age=18, sjt=6, dt=None,\
     if not ra:
         s.close()
         return False
-    if ra.free >= conf.yuehui_fee:
-        ra.free = ra.free - conf.yuehui_fee
-    elif ra.num + ra.free >= conf.yuehui_fee:
-        ra.num = ra.num + ra.free - conf.yuehui_fee
+    if ra.free >= F:
+        ra.free = ra.free - F
+    elif ra.num + ra.free >= F:
+        ra.num = ra.num + ra.free - F
     else:
         s.close()
         return False
     d = Dating(name=name, uid=uid, age=age, sex=sex, sjt=sjt, dt=dt,\
                loc1=loc1, loc2=loc2, locd=locd, obj=obj, num=num,\
                fee=fee, bc=bc, valid_time=valid_time)
+    t_ = d.time_
     s.add(d)
     try:
         s.commit()
+        c = and_(Dating.userid == uid, Dating.time_ == t_)
+        r = s.query(Dating).filter(c).first()
+        if r:
+            did = r.id
+            record = Consume_record(0, uid, did, 3, F)
+            s.add(record)
+            s.commit()
     except:
         s.close()
         m = d.dic_return()
@@ -2066,6 +2089,7 @@ def remove_dating(uid=None, did=None):
     r.valid_state = 2
     r.msg = '用户删除'
     try:
+        s.query(Yh_baoming).filter(Yh_baoming.dating_id == did).delete(synchronize_session=False)
         s.commit()
     except:
         s.close()
@@ -2332,6 +2356,15 @@ def create_zhenghun(uid=None, loc1=None, \
         loc1 = ''
     if not loc2:
         loc2 = ''
+    v_d = int(v_d)
+    fee_table = [10, conf.zhenghun_fee_1, conf.zhenghun_fee_2,\
+                     conf.zhenghun_fee_3, conf.zhenghun_fee_4]
+    if v_d <= 0:
+        v_d = 1
+    elif v_d >= len(fee_table):
+        v_d = len(fee_table)-1
+    i = int(v_d/7)
+    F = fee_table[i]
     s = DBSession()
     ru = s.query(User).filter(User.id == uid).first()
     if not ru:
@@ -2345,10 +2378,10 @@ def create_zhenghun(uid=None, loc1=None, \
     if not ra:
         s.close()
         return err
-    if ra.free >= conf.zhenghun_fee:
-        ra.free = ra.free - conf.zhenghun_fee
-    elif ra.num + ra.free >= conf.zhenghun_fee:
-        ra.num = ra.num  + ra.free - conf.zhenghun_fee
+    if ra.free >= F:
+        ra.free = ra.free - F
+    elif ra.num + ra.free >= F:
+        ra.num = ra.num  + ra.free - F
     else:
         s.close()
         return {'code': -1, 'msg': '余额不足'}
@@ -2356,8 +2389,15 @@ def create_zhenghun(uid=None, loc1=None, \
     z = Zhenghun(id_=0, uid=uid, name=name, age=age, sex=sex, loc1=loc1,\
                  loc2=loc2, v_d=v_d, title=title, cnt=cnt, obj1=obj1)
     s.add(z)
+    t_ = z.time_
     try:
         s.commit()
+        c = and_(Zhenghun.userid == uid, Zhenghun.time_ == t_)
+        r = s.query(Zhenghun).filter(c).first()
+        if r:
+            record = Consume_record(0, uid, did, 4, F)
+            s.add(record)
+            s.commit()
     except:
         msg = 'zhenghun create: failed uid=%s name=%s age=%s sex=%s loc1=%s loc2=%s valid_time=%d title=%s content=%s object1=%d' % (uid, name, age, sex, loc1, loc2, v_d, title, cnt, obj1)
         print(msg)
@@ -2725,7 +2765,13 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
 
 
 if __name__ == '__main__':
+    s = DBSession()
+    r = s.query(func.max(User.id)).one()[0]
+    print(r)
+    s.close()
+'''
     r = find_users(sex='1', agemin='', agemax='', cur1='', cur2=None,\
             ori1='', ori2=None, degree='', salary='', \
             xz='', sx='', limit=None, page=None, next_='0')
     print(r)
+'''

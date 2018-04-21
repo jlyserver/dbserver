@@ -77,6 +77,19 @@ zhenghun_fee=10
 timeout_fee=30
 free_bean=10
 
+dating_fee_1=1
+dating_fee_2=2
+dating_fee_3=3
+dating_fee_4=4
+dating_fee_5=5
+dating_fee_6=6
+dating_fee_7=7
+
+zhenghun_fee_1=10
+zhenghun_fee_2=20
+zhenghun_fee_4=30
+zhenghun_fee_4=40
+
 [msg]
 msg_yanyuan=Ta对你有眼缘,赶快去看一下吧
 yanyuan_reject=Ta拒绝了你的眼缘

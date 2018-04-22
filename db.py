@@ -2756,13 +2756,14 @@ def confirm_order(openid, total_fee, tid, otn):
     total_fee = int(total_fee)
     s = DBSession()
     r = s.query(ConfirmPay).filter(ConfirmPay.transactionid == tid).first()
+    uid = otn.split('_')[1]
+    uid = int(uid)
     if not r:
         confirm = ConfirmPay(0, openid, tid, total_fee, otn)
         s.add(confirm)
         s.commit()
-        ru = s.query(User).filter(User.openid1 == openid).first()
+        ru = s.query(User).filter(User.id == uid).first()
         if ru:
-            uid = ru.id
             ra = s.query(User_account).filter(User_account.id == uid).first()
             ra.num = ra.num + int(total_fee/10)
             if total_fee % 10 > 0:
@@ -2774,14 +2775,8 @@ def confirm_order(openid, total_fee, tid, otn):
 def query_pay_order(uid, otn):
     if not uid or not otn:
         return None
-    uid = int(uid)
     s = DBSession()
-    ru = s.query(User).filter(User.id == uid).first()
-    if not ru:
-        s.close()
-        return None
-    openid = ru.openid1
-    c = and_(ConfirmPay.openid == openid, ConfirmPay.out_trade_no == otn)
+    c = and_(True, ConfirmPay.out_trade_no == otn)
     rc = s.query(ConfirmPay).filter(c).first()
     if not rc:
         s.close()

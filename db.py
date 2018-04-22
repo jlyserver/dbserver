@@ -2583,7 +2583,7 @@ def wx_login_and_regist(openid=None, unionid=None, sex=None, nick_name=None, src
     if r:
         rs = r.dic_return()
         uid = r.id
-        r.openid = openid
+        r.openid1 = openid
         D['uid'] = uid
         if nick_name:
             r.nick_name = nick_name
@@ -2757,7 +2757,7 @@ def confirm_order(openid, total_fee, tid, otn):
     s = DBSession()
     r = s.query(ConfirmPay).filter(ConfirmPay.transactionid == tid).first()
     if not r:
-        confirm = ConfirmPay(0, openid, total_fee, tid, otn)
+        confirm = ConfirmPay(0, openid, tid, total_fee, otn)
         s.add(confirm)
         s.commit()
         ru = s.query(User).filter(User.openid1 == openid).first()
@@ -2774,6 +2774,7 @@ def confirm_order(openid, total_fee, tid, otn):
 def query_pay_order(uid, otn):
     if not uid or not otn:
         return None
+    uid = int(uid)
     s = DBSession()
     ru = s.query(User).filter(User.id == uid).first()
     if not ru:
@@ -2788,6 +2789,20 @@ def query_pay_order(uid, otn):
     s.close()
     return True
 
+def query_yue(uid):
+    if not uid:
+        return None
+    uid = int(uid)
+    s = DBSession()
+    ru = s.query(User_account).filter(User_account.id == uid).first()
+    if ru:
+        d = {'num': ru.num, 'free':ru.free}
+        s.close()
+        return d
+    s.close()
+    return None
+
+
 __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'user_regist', 'query_user', 'query_user_login', 'get_user_info',
          'update_basic','get_ctx_info', 'edit_statement', 'edit_other',
@@ -2800,14 +2815,17 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'delimg', 'seeother', 'sendemail', 'yanyuan', 'yanyuan_check',
          'email', 'latest_conn', 'sawother', 'del_email', 'email_unread',
          'see_email', 'yanyuan_reply', 'update_free_fee', 'get_sex_by_uid',
-         'sendcare', 'guanzhu_check', 'confirm_order', 'query_pay_order']
+         'sendcare', 'guanzhu_check', 'confirm_order', 'query_pay_order',
+         'query_yue']
 
 
 if __name__ == '__main__':
-    s = DBSession()
-    r = s.query(func.max(User.id)).one()[0]
+    openid = 'openid123'
+    total_fee = '1'
+    tid = 'tid123'
+    otn = 'otn123'
+    r = confirm_order(openid, total_fee, tid, otn)
     print(r)
-    s.close()
 '''
     r = find_users(sex='1', agemin='', agemax='', cur1='', cur2=None,\
             ori1='', ori2=None, degree='', salary='', \

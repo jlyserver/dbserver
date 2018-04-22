@@ -887,7 +887,7 @@ class ConfirmOrderHandler(tornado.web.RequestHandler):
     def post(self):
         openid    = self.get_argument('openid', None)
         total_fee = self.get_argument('total_fee', None)
-        tid  = self.get_argument('traction_id', None)
+        tid  = self.get_argument('transaction_id', None)
         otn  = self.get_argument('out_trade_no', None)
 
         d = {'code': -1, 'msg': '参数错误'}
@@ -895,6 +895,7 @@ class ConfirmOrderHandler(tornado.web.RequestHandler):
             pass
         else:
             r = confirm_order(openid, total_fee, tid, otn)
+            print('r=', r)
             if r:
                 d = {'code': 0, 'msg': 'ok'}
         d = json.dumps(d)
@@ -914,6 +915,18 @@ class QueryOrderHandler(tornado.web.RequestHandler):
                 d = {'code': -1, 'msg': 'not exist'}
         d = json.dumps(d)
         self.write(d)
+
+class YuEHandler(tornado.web.RequestHandler):
+    def post(self):
+        uid = self.get_argument('uid', None)
+        d = {'code': -1, 'msg': '参数错误'}
+        if uid:
+            r = query_yue(uid)
+            if r:
+                d = {'code': 0, 'msg': 'ok', 'data':r}
+        d = json.dumps(d)
+        self.write(d)
+
 
 if __name__ == "__main__":
     tornado.options.parse_command_line()
@@ -972,6 +985,7 @@ if __name__ == "__main__":
         ('/yanyuan_reply', YanYuanReplyHandler),
         ('/confirm_order', ConfirmOrderHandler),#确认支付结果
         ('/query_order_pay', QueryOrderHandler),#查询支付结果
+        ('/yue', YuEHandler),
               ]
     application = tornado.web.Application(handler, **settings)
     http_server = tornado.httpserver.HTTPServer(application)

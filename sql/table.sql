@@ -24,6 +24,8 @@ create table if not exists user
     state tinyint default 0, /*征友状态 0=征友进行中 1=找到意中人*/
     regist_time timestamp not null,
     last_login  timestamp default CURRENT_TIMESTAMP not null,
+    openid1 varchar(32) default '', /*微信openid1 微信*/
+    openid2 varchar(32) default '', /*微信openid2 公众号*/
     unionid varchar(32) default '', /*微信unionid*/
     valid_state tinyint not null default 0, /*状态 0=合法 1=被禁止*/
     msg varchar(32) default '' /*被禁止的原因*/
@@ -235,4 +237,14 @@ create table if not exists zhenghun
     scan_count int unsigned default 0, /*浏览次数*/
     valid_state tinyint not null default 0, /*0=帖子有效 1=被禁止 2=用户删除*/
     msg varchar(32) /*被禁止的原因*/
+) engine=InnoDB, charset=utf8;
+
+create table if not exists confirmpay
+(
+    id int unsigned primary key auto_increment,
+    openid varchar(32) default '', /*微信openid*/
+    transactionid varchar(32) default '', /*微信内部交易id*/
+    total_fee int unsigned not null,  /*单位: 分*/
+    out_trade_no varchar(32) not null,  /*内部订单号*/
+    time_ timestamp default CURRENT_TIMESTAMP not null
 ) engine=InnoDB, charset=utf8;

@@ -60,6 +60,7 @@ table_care=care
 table_dating=dating
 table_yh_baoming=yh_baoming
 table_zhenghun=zhenghun
+table_confirmpay=confirmpay
 
 [pic]
 pic_ip=http://47.94.105.76
@@ -87,7 +88,7 @@ dating_fee_7=7
 
 zhenghun_fee_1=10
 zhenghun_fee_2=20
-zhenghun_fee_4=30
+zhenghun_fee_3=30
 zhenghun_fee_4=40
 
 [msg]

@@ -357,6 +357,7 @@ class WxLoginHandler(tornado.web.RequestHandler):
         nick_name = self.get_argument('nick_name', '')
         sex       = self.get_argument('sex', '1')
         unionid   = self.get_argument('unionid', '')
+        openid    = self.get_argument('openid', '')
         src       = self.get_argument('src', '')
         if conf.debug:
             print('nick_name=%s' % nick_name)
@@ -366,7 +367,7 @@ class WxLoginHandler(tornado.web.RequestHandler):
         if not unionid:
             pass
         else:
-            r = wx_login_and_regist(unionid=unionid, sex=sex, nick_name=nick_name, src=src)
+            r = wx_login_and_regist(openid=openid, unionid=unionid, sex=sex, nick_name=nick_name, src=src)
             if conf.debug:
                 print('r=', r)
             if r:
@@ -882,6 +883,37 @@ class YanYuanReplyHandler(tornado.web.RequestHandler):
         d = json.dumps(d)
         self.write(d)
 
+class ConfirmOrderHandler(tornado.web.RequestHandler):
+    def post(self):
+        openid    = self.get_argument('openid', None)
+        total_fee = self.get_argument('total_fee', None)
+        tid  = self.get_argument('traction_id', None)
+        otn  = self.get_argument('out_trade_no', None)
+
+        d = {'code': -1, 'msg': '参数错误'}
+        if not openid or not total_fee or not tid or not otn:
+            pass
+        else:
+            r = confirm_order(openid, total_fee, tid, otn)
+            if r:
+                d = {'code': 0, 'msg': 'ok'}
+        d = json.dumps(d)
+        self.write(d)
+
+class QueryOrderHandler(tornado.web.RequestHandler):
+    def post(self):
+        uid = self.get_argument('uid', None)
+        otn = self.get_argument('out_trade_no', None)
+
+        d = {'code': -1, 'msg': '参数错误'}
+        if uid and otn:
+            r = query_pay_order(uid, otn)
+            if r:
+                d = {'code': 0, 'msg': 'ok'}
+            else:
+                d = {'code': -1, 'msg': 'not exist'}
+        d = json.dumps(d)
+        self.write(d)
 
 if __name__ == "__main__":
     tornado.options.parse_command_line()
@@ -938,6 +970,8 @@ if __name__ == "__main__":
         ('/email_unread', EmailUnReadHandler),
         ('/wxlogin', WxLoginHandler),
         ('/yanyuan_reply', YanYuanReplyHandler),
+        ('/confirm_order', ConfirmOrderHandler),#确认支付结果
+        ('/query_order_pay', QueryOrderHandler),#查询支付结果
               ]
     application = tornado.web.Application(handler, **settings)
     http_server = tornado.httpserver.HTTPServer(application)

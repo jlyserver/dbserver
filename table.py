@@ -29,7 +29,7 @@ class User(Base):
             sex=0, aim=0, age=18,\
             m=0, xz=0, sx=0, blood=0, salary=0, wt=50, ht=160, de=0, \
             na=1, cl1='', cl2='', ori1='', ori2='', st=0,
-            t=None, last_t='', unionid='', v_st=0, msg=''):
+            t=None, last_t='', openid1='', openid2='', unionid='', v_st=0, msg=''):
         self.id       = id_
         if len(name) == 0 and mobile:
             name = '新用户%s' % self.mobile[-4:]
@@ -53,6 +53,8 @@ class User(Base):
         self.ori_loc1 = ori1
         self.ori_loc2 = ori2
         self.state    = st
+        self.openid1  = openid1
+        self.openid2  = openid2
         if not t:
             t       = time.localtime()
             now     = time.strftime('%Y-%m-%d %H:%M:%S', t)
@@ -92,6 +94,8 @@ class User(Base):
     state             = Column(Integer)
     regist_time       = Column(TIMESTAMP)
     last_login        = Column(TIMESTAMP)
+    openid1           = Column(String(32))
+    openid2           = Column(String(32))
     unionid           = Column(String(32))
     valid_state       = Column(Integer)
     msg               = Column(String(32))
@@ -110,7 +114,8 @@ class User(Base):
                  'ori_loc1': self.ori_loc1,    'ori_loc2':  self.ori_loc2,
                  'state':    self.state,       'unionid':self.unionid,
                  'regist_time': str(self.regist_time), 'msg': self.msg,
-                 'valid_state': self.valid_state}
+                 'valid_state': self.valid_state, 
+                 'openid1': self.openid1, 'openid2': self.openid2}
     def dic_return2(self):
         return { 'id':       self.id,          'nick_name': self.nick_name,
                  'sex':      self.sex,         'age':       self.age,
@@ -645,9 +650,34 @@ class Zhenghun(Base):
                 'time': str(self.time_), 'nick_name': self.nick_name}
 
 #################################################################
+
+class ConfirmPay(Base):
+    __tablename__ = conf.table_confirmpay
+    def __init__(self, id_=0, openid='', tid='', fee=0, otn=''):
+        self.id          = id_
+        self.openid      = openid
+        self.transactionid = tid
+        self.total_fee   = fee
+        self.out_trade_no= otn
+        t = time.localtime()
+        now = time.strftime('%Y-%m-%d %H:%M:%S', t)
+        self.time_       = now
+    id                   = Column(Integer, primary_key=True)
+    openid               = Column(String(32))
+    transactionid        = Column(String(32))
+    total_fee            = Column(Integer)
+    out_trade_no         = Column(String(32))
+    time_                = Column(TIMESTAMP)
+    def dic_return(self):
+        return {'id': self.id, 'openid': self.openid, 'total_fee': self.total_fee,
+                'out_trade_no': self.out_trade_no, 'time': self.time_,
+                'transactionid': self.transactionid}
+
+#################################################################
+
 __all__=['DBSession', 'User', 'Statement', 'OtherInfo', 'Picture', 'Hobby',
          'Email', 'Yanyuan', 'Consume_record', 'Add_record',
-         'User_account', 'Look',
+         'User_account', 'Look', 'ConfirmPay',
          'Care', 'Dating', 'Yh_baoming', 'Zhenghun', 'DeprecatedPicture']
 '''
 '''

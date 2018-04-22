@@ -2563,8 +2563,8 @@ def detail_zhenghun(zid=None, s=None):
     return {'code': 0, 'msg': 'ok', 'data':D}
 
 
-def wx_login_and_regist(unionid=None, sex=None, nick_name=None, src=None):
-    if not unionid:
+def wx_login_and_regist(openid=None, unionid=None, sex=None, nick_name=None, src=None):
+    if not unionid or not openid:
         return None
     '''
     key = 'unionid_%s' % unionid
@@ -2583,6 +2583,7 @@ def wx_login_and_regist(unionid=None, sex=None, nick_name=None, src=None):
     if r:
         rs = r.dic_return()
         uid = r.id
+        r.openid = openid
         D['uid'] = uid
         if nick_name:
             r.nick_name = nick_name
@@ -2621,7 +2622,7 @@ def wx_login_and_regist(unionid=None, sex=None, nick_name=None, src=None):
             sex = 2
         else:
             sex = 1
-        u = User(name=name,sex=sex, unionid=unionid)
+        u = User(openid1=openid, name=name,sex=sex, unionid=unionid)
         s.add(u)
         s.commit()
 
@@ -2749,6 +2750,44 @@ def get_sex_by_uid(uid=None):
 
     return None  if not r else r.sex
 
+def confirm_order(openid, total_fee, tid, otn):
+    if not openid or not total_fee or not tid or not otn:
+        return None
+    total_fee = int(total_fee)
+    s = DBSession()
+    r = s.query(ConfirmPay).filter(ConfirmPay.transactionid == tid).first()
+    if not r:
+        confirm = ConfirmPay(0, openid, total_fee, tid, otn)
+        s.add(confirm)
+        s.commit()
+        ru = s.query(User).filter(User.openid1 == openid).first()
+        if ru:
+            uid = ru.id
+            ra = s.query(User_account).filter(User_account.id == uid).first()
+            ra.num = ra.num + int(total_fee/10)
+            if total_fee % 10 > 0:
+                ra.num = ra.num + 1
+            s.commit()
+    s.close()
+    return True
+
+def query_pay_order(uid, otn):
+    if not uid or not otn:
+        return None
+    s = DBSession()
+    ru = s.query(User).filter(User.id == uid).first()
+    if not ru:
+        s.close()
+        return None
+    openid = ru.openid1
+    c = and_(ConfirmPay.openid == openid, ConfirmPay.out_trade_no == otn)
+    rc = s.query(ConfirmPay).filter(c).first()
+    if not rc:
+        s.close()
+        return None
+    s.close()
+    return True
+
 __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'user_regist', 'query_user', 'query_user_login', 'get_user_info',
          'update_basic','get_ctx_info', 'edit_statement', 'edit_other',
@@ -2761,7 +2800,7 @@ __all__=['verify_mobile', 'find_password', 'get_ctx_info_mobile_password',
          'delimg', 'seeother', 'sendemail', 'yanyuan', 'yanyuan_check',
          'email', 'latest_conn', 'sawother', 'del_email', 'email_unread',
          'see_email', 'yanyuan_reply', 'update_free_fee', 'get_sex_by_uid',
-         'sendcare', 'guanzhu_check']
+         'sendcare', 'guanzhu_check', 'confirm_order', 'query_pay_order']
 
 
 if __name__ == '__main__':

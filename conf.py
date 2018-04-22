@@ -55,6 +55,7 @@ class Picconf():
         self.table_dating       = p.get('table', 'table_dating')
         self.table_yh_baoming   = p.get('table', 'table_yh_baoming')
         self.table_zhenghun     = p.get('table', 'table_zhenghun')
+        self.table_confirmpay   = p.get('table', 'table_confirmpay')
 
         self.pic_ip             = p.get('pic', 'pic_ip')
         self.postfix            = p.get('pic', 'postfix')

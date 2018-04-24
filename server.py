@@ -538,7 +538,7 @@ class ImgHandler(tornado.web.RequestHandler):
         if not uid or not f or not s or not t or not k:
             d = {'code': -1, 'msg': '参数不正确'}
         else:
-            uid, kind = int(uid), int(kind)
+            uid, kind = int(uid), int(k)
             r = write_img(uid=uid, first=f, second=s, third=t, kind=k)
             if r:
                d = {'code': 0, 'msg': 'ok'}

@@ -2357,13 +2357,13 @@ def create_zhenghun(uid=None, loc1=None, \
     if not loc2:
         loc2 = ''
     v_d = int(v_d)
+    i = int(v_d/7)
     fee_table = [10, conf.zhenghun_fee_1, conf.zhenghun_fee_2,\
                      conf.zhenghun_fee_3, conf.zhenghun_fee_4]
-    if v_d <= 0:
-        v_d = 1
-    elif v_d >= len(fee_table):
-        v_d = len(fee_table)-1
-    i = int(v_d/7)
+    if i <= 0:
+        i = 1
+    elif i >= len(fee_table):
+        i = len(fee_table)-1
     F = fee_table[i]
     s = DBSession()
     ru = s.query(User).filter(User.id == uid).first()
@@ -2395,7 +2395,8 @@ def create_zhenghun(uid=None, loc1=None, \
         c = and_(Zhenghun.userid == uid, Zhenghun.time_ == t_)
         r = s.query(Zhenghun).filter(c).first()
         if r:
-            record = Consume_record(0, uid, did, 4, F)
+            zid = r.id
+            record = Consume_record(0, uid, zid, 4, F)
             s.add(record)
             s.commit()
     except:

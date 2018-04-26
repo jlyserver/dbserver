@@ -237,14 +237,13 @@ class GuanzhuCheckHandler(tornado.web.RequestHandler):
     def post(self):
         uid  = self.get_argument('uid', None)
         cuid = self.get_argument('cuid',None)
-        kind = self.get_argument('kind', None)
         d = {} 
-        if not uid or not cuid or not kind: 
+        if not uid or not cuid: 
             d = {'code': -1, 'msg': '参数不正确'}
         elif int(uid) == int(cuid):
             d = {'code': -1, 'msg': '自己不用关注自己'}
         else:
-            r = guanzhu_check(uid=uid, cuid=cuid, kind=kind)
+            r = guanzhu_check(uid=uid, cuid=cuid)
             if not r:
                 d = {'code': -1, 'msg': '参数不正确'}
             else:

@@ -526,6 +526,9 @@ def update_basic(uid=None, nick_name=None, aim=None, age=None,\
     r = s.query(Hobby).filter(Hobby.id == uid).first()
     ctx = get_ctx_info(uid=uid, clean=True, s=s)
     s.close()
+    sex = ctx['user']['sex']
+    key = 'new_%s*' % str(sex)
+    cache.delpat(key)
     return ctx
 
 #按条件召回用户信息
@@ -539,7 +542,7 @@ def query_user(**cond):
     nation = cond.get('nation', None)
     regist_time = cond.get('regist_time', None)
     s = DBSession()
-    c = True
+    c = and_(True, User.valid_state != 1)
     if sex:
         c = and_(c, User.sex == sex)
     if age:
@@ -618,7 +621,8 @@ def query_new(t, sex, limit, page, next_):
         return v
 
     s = DBSession()
-    r = s.query(User).filter(User.sex == sex).filter(User.regist_time >= t).order_by(desc(User.last_login)).limit(limit).offset(page*next_)
+    c = and_(User.sex == sex, User.regist_time >= t, User.valid_state != 1)
+    r = s.query(User).filter(c).order_by(desc(User.last_login)).limit(limit).offset(page*next_)
     ids = [e.id for e in r]
     if not ids:
         s.close()
@@ -681,7 +685,7 @@ def find_users(sex=None,  agemin=None, agemax=None, cur1=None, cur2=None,\
     page  = conf.page if page < 1 else page
     next_ = 0 if next_ < 1 else next_
     s = DBSession()
-    t = s.query(User)
+    t = s.query(User).filter(User.valid_state != 1)
     if sex and int(sex) in [1,2]:
         sex = int(sex)
         t = t.filter(User.sex == sex)
@@ -784,8 +788,13 @@ def edit_other(uid=None, salary=None, work=None, car=None, house=None,\
     s = DBSession()
     s.query(OtherInfo).filter(OtherInfo.id == int(uid)).update(ou)
     s.commit()
-    s.close()
 
+    ru = s.query(User).filter(User.id == int(uid)).first()
+    if ru:
+        sex = ru.sex
+        key = 'new_%s*' % str(sex)
+        cache.delpat(key)
+    s.close()
     key = 'otherinfo_%s' % str(uid)
     cache.del_(key)
     return True
@@ -954,6 +963,7 @@ def write_img(uid=None, first=None, second=None, third=None, kind=None):
     if not uid or not first or not second or not third or not kind:
         return None
     s = DBSession()
+    kind = int(kind)
     r = s.query(Picture).filter(Picture.id == uid).first()
     if not r or r.count < 1:
         s.close()
@@ -962,6 +972,8 @@ def write_img(uid=None, first=None, second=None, third=None, kind=None):
         src = '%s/%s/%s' % (first, second, third)
         if kind == 1:
             r.url0 = src
+            key = 'new_*'
+            cache.delpat(key)
         else:
             r.count = r.count - 1
             if not len(r.url1):
@@ -999,10 +1011,7 @@ def delimg(uid=None, src=None):
     if not r:
         s.close()
         return None
-    if r.url0 == src:
-        r.url0 = ''
-        r.count = r.count + 1
-    elif r.url1 == src:
+    if r.url1 == src:
         r.url1, r.url2, r.url3, r.url4, r.url5, r.url6, r.url7, r.url8, r.url9 = r.url2, r.url3, r.url4, r.url5, r.url6, r.url7, r.url8, r.url9, ''
         r.count = r.count + 1
     elif r.url2 == src:
@@ -1421,31 +1430,19 @@ def yanyuan_check(uid=None, cuid=None, s=None):
         cache.set(key, 1, conf.redis_timeout)
     return True if r else None
 
-def guanzhu_check(uid=None, cuid=None, kind=None, s=None):
-    if not uid or not cuid or not kind:
+def guanzhu_check(uid=None, cuid=None, s=None):
+    if not uid or not cuid:
         return None
     if uid == cuid:
         return None
-    cuid, uid, kind = int(cuid), int(uid), int(kind)
-    if kind not in [0,1]:
-        return None
+    cuid, uid = int(cuid), int(uid)
     f = s
     if not f:
         s = DBSession()
     c = and_(Care.from_id == cuid, Care.to_id == uid)
     r = s.query(Care).filter(c).first()
-    if r:
-        if kind == 0:
-            s.query(Care).filter(Care.id == r.id).delete(synchronize_session=False)
-            s.commit()
-    else:
-        if kind == 1:
-            care = Care(0, cuid, uid)
-            s.add(care)
-            s.commit()
-    if not f:
-        s.close()
-    return {'guanzhu':kind}
+    d = 1 if r else 0
+    return {'guanzhu':d}
 
 #kind=1 收件 !=1 发件
 def __mail(kind=1, uid=None, page=None, next_=None, s=None):

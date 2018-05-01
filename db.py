@@ -1341,7 +1341,9 @@ def icare(uid, s=None):
 kind =1关注 =0取消关注
 '''
 def sendcare(uid=None, cuid=None, kind=None):
-    if not uid or not cuid or not kind:
+    if not kind and kind != 0:
+        return None
+    if not uid or not cuid:
         return None
 
 
@@ -1958,7 +1960,7 @@ def participate_dating(uid, page=None, limit=None, next_=None,  s=None):
     page = conf.toffset_dating_page if not page else int(page)
     limit = conf.toffset_dating_limit if not limit else int(limit)
     next_ = 0 if not next_ else int(next_)
-    if not uid or not uid.isdigit():
+    if not uid:
         return {'page':page, 'arr':[], 'count': 0, 'next': next_}
     
     f = s
